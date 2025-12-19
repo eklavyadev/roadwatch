@@ -11,7 +11,7 @@ const pool = new Pool({
 export async function GET() {
   try {
     const res = await pool.query(
-      "SELECT * FROM reports WHERE status = 'pending' ORDER BY created_at DESC"
+      "SELECT * FROM reports ORDER BY created_at DESC"
     );
     return NextResponse.json(res.rows);
   } catch (error: any) {
