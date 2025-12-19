@@ -51,7 +51,7 @@ export default function Navbar() {
 
           <div className="hidden lg:flex lg:flex-1 lg:justify-end">
             <a
-              href="#map"
+              href="/report"
               className="rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-[#020817] hover:bg-cyan-400 transition-colors"
             >
               Report pothole
@@ -111,7 +111,7 @@ export default function Navbar() {
 
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <a
-              href="#map"
+              href="/report"
               className="rounded-md bg-cyan-500 px-6 py-3 text-sm font-semibold text-[#020817] hover:bg-cyan-400 transition-colors"
             >
               Report a pothole
