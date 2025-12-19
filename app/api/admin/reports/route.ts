@@ -3,11 +3,23 @@ import { Pool } from 'pg';
 
 const pool = new Pool({
   connectionString: process.env.DB_URI,
+  ssl: {
+    rejectUnauthorized: false, // 🔥 REQUIRED on Vercel
+  },
 });
 
 export async function GET() {
-  const res = await pool.query(
-    "SELECT * FROM reports WHERE status = 'pending' ORDER BY created_at DESC"
-  );
-  return NextResponse.json(res.rows);
+  try {
+    const res = await pool.query(
+      "SELECT * FROM reports WHERE status = 'pending' ORDER BY created_at DESC"
+    );
+
+    return NextResponse.json(res.rows);
+  } catch (error) {
+    console.error('DB ERROR:', error);
+    return NextResponse.json(
+      { error: 'Database error' },
+      { status: 500 }
+    );
+  }
 }
