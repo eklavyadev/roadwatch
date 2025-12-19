@@ -3,10 +3,10 @@ import { Pool } from 'pg';
 
 const pool = new Pool({
   connectionString: process.env.DB_URI,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: { rejectUnauthorized: false },
+  max: 1, // VERY important for serverless
 });
+
 
 export async function POST(req: Request) {
   try {
