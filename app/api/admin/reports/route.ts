@@ -3,9 +3,7 @@ import { Pool } from 'pg';
 
 const pool = new Pool({
   connectionString: process.env.DB_URI,
-  ssl: {
-    rejectUnauthorized: false, // 🔥 REQUIRED on Vercel
-  },
+  ssl: { rejectUnauthorized: false },
 });
 
 export async function GET() {
@@ -13,12 +11,14 @@ export async function GET() {
     const res = await pool.query(
       "SELECT * FROM reports WHERE status = 'pending' ORDER BY created_at DESC"
     );
-
     return NextResponse.json(res.rows);
-  } catch (error) {
-    console.error('DB ERROR:', error);
+  } catch (error: any) {
+    console.error('FULL DB ERROR:', error);
     return NextResponse.json(
-      { error: 'Database error' },
+      {
+        message: 'Database error',
+        detail: error.message,
+      },
       { status: 500 }
     );
   }
