@@ -3,25 +3,32 @@
 import { useState } from 'react'
 import { Dialog, DialogPanel } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ChevronDownIcon } from '@heroicons/react/24/outline'
+
 
 const navigation = [
-  { name: 'Home', href: '#' },
-  { name: 'How it works', href: '#how' },
-  { name: 'Map', href: '#map' },
-  { name: 'Impact', href: '#impact' },
+  { name: 'Home', href: '/' },
+  { name: 'How it works', href: '/#how' },
+  { name: 'Map', href: '/#map' },
+  { name: 'API Docs', href: '/api' },
+  { name: 'Tech Stack', href: '/tech' }
+
 ]
+
+
+
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <div className="relative min-h-screen bg-[#020817] text-white">
+    <div>
       {/* NAVBAR */}
-      <header className="absolute inset-x-0 top-0 z-50">
+      <header className="absolute inset-x-0 top-0 z-50 ">
         <nav className="flex items-center justify-between p-6 lg:px-8">
           <div className="flex lg:flex-1">
             <a
-              href="#"
+              href="/"
               className="text-lg font-semibold tracking-tight"
             >
               Road<span className="text-cyan-400">Watch</span>
@@ -93,39 +100,6 @@ export default function Navbar() {
           </DialogPanel>
         </Dialog>
       </header>
-
-      {/* HERO */}
-      <main className="relative flex min-h-screen items-center px-6 pt-32 lg:px-8 lg:pt-0">
-        <div className="mx-auto max-w-3xl text-center lg:-mt-16">
-          <h1 className="text-4xl sm:text-6xl font-semibold tracking-tight ">
-            Making roads{' '}
-            <span className="text-cyan-400 animate-pulse">safer</span>{' '}
-            with data
-          </h1>
-
-          <p className="mt-6 text-lg text-gray-400 leading-relaxed">
-            RoadWatch is a geo-tagged platform that lets citizens report
-            potholes with photos and location, helping authorities
-            prioritize road repairs.
-          </p>
-
-          <div className="mt-10 flex items-center justify-center gap-x-6">
-            <a
-              href="/report"
-              className="rounded-md bg-cyan-500 px-6 py-3 text-sm font-semibold text-[#020817] hover:bg-cyan-400 transition-colors"
-            >
-              Report a pothole
-            </a>
-
-            <a
-              href="#how"
-              className="text-sm font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
-            >
-              How it works →
-            </a>
-          </div>
-        </div>
-      </main>
     </div>
   )
 }
