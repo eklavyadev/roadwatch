@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+const MAX_SIZE_MB = 10;
+
 export default function ReportPotholePage() {
   const [image, setImage] = useState<File | null>(null);
   const [location, setLocation] = useState('');
@@ -35,6 +37,12 @@ export default function ReportPotholePage() {
       return;
     }
 
+    // 🔴 FILE SIZE CHECK (CLIENT)
+    if (image.size > MAX_SIZE_MB * 1024 * 1024) {
+      alert('Please upload an image smaller than 10MB');
+      return;
+    }
+
     setLoading(true);
     setSuccess(false);
 
@@ -50,10 +58,11 @@ export default function ReportPotholePage() {
       body: formData,
     });
 
+    const data = await res.json();
     setLoading(false);
 
     if (!res.ok) {
-      alert('Something went wrong. Please try again.');
+      alert(data.error || 'Something went wrong');
       return;
     }
 
@@ -71,7 +80,6 @@ export default function ReportPotholePage() {
       <div className="mx-auto max-w-xl bg-[#0f172a] p-6 rounded border border-slate-700">
         <h1 className="text-2xl font-bold mb-6">Report a Pothole</h1>
 
-        {/* Success message */}
         {success && (
           <div className="mb-4 rounded bg-green-600/20 border border-green-600 p-3 text-sm text-green-400">
             ✅ Pothole reported successfully. It will be reviewed shortly.
@@ -80,7 +88,9 @@ export default function ReportPotholePage() {
 
         {/* Image */}
         <label className="block mb-4">
-          <span className="text-sm text-gray-300">Capture / Upload photo</span>
+          <span className="text-sm text-gray-300">
+            Capture / Upload photo (max 10MB)
+          </span>
           <input
             type="file"
             accept="image/*"
@@ -90,7 +100,6 @@ export default function ReportPotholePage() {
           />
         </label>
 
-        {/* Image preview */}
         {image && (
           <div className="mb-4">
             <img
@@ -101,7 +110,7 @@ export default function ReportPotholePage() {
           </div>
         )}
 
-        {/* Location text */}
+        {/* Location */}
         <label className="block mb-4">
           <span className="text-sm text-gray-300">Location description</span>
           <input
@@ -145,7 +154,6 @@ export default function ReportPotholePage() {
           </select>
         </label>
 
-        {/* Submit */}
         <button
           onClick={submitReport}
           disabled={loading}

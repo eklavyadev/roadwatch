@@ -6,6 +6,13 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const MAX_SIZE_MB = 10;
+
+function generateSafeFileName(file: File) {
+  const ext = file.type.split('/')[1] || 'jpg';
+  return `report-${Date.now()}-${crypto.randomUUID()}.${ext}`;
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
@@ -16,19 +23,29 @@ export async function POST(req: Request) {
     const lng = Number(formData.get('lng'));
     const severity = Number(formData.get('severity'));
 
-    if (!image || !location || !lat || !lng || !severity) {
+    if (!image || !location || Number.isNaN(lat) || Number.isNaN(lng) || Number.isNaN(severity)) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
+    // 🔴 FILE SIZE CHECK (SERVER)
+    if (image.size > MAX_SIZE_MB * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'Please upload an image smaller than 10MB' },
+        { status: 413 }
+      );
+    }
+
     /* ---------- UPLOAD IMAGE ---------- */
-    const fileName = `${Date.now()}-${image.name}`;
+    const fileName = generateSafeFileName(image);
 
     const { error: uploadError } = await supabase.storage
       .from('reports')
-      .upload(fileName, image);
+      .upload(fileName, image, {
+        contentType: image.type,
+      });
 
     if (uploadError) {
       console.error(uploadError);
