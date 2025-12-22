@@ -18,9 +18,15 @@ export default function AdminPage() {
   const [auth, setAuth] = useState(false);
   const [password, setPassword] = useState('');
   const [reports, setReports] = useState<Report[]>([]);
-  const [activeTab, setActiveTab] = useState<
-    'pending' | 'approved' | 'rejected'
-  >('pending');
+  const [activeTab, setActiveTab] =
+    useState<'pending' | 'approved' | 'rejected'>('pending');
+  const [toast, setToast] = useState<string | null>(null);
+
+  /* ---------- TOAST ---------- */
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   /* ---------- AUTH ---------- */
   const login = async () => {
@@ -28,7 +34,7 @@ export default function AdminPage() {
       setAuth(true);
       fetchReports();
     } else {
-      alert('Wrong password');
+      showToast('❌ Wrong password');
     }
   };
 
@@ -48,13 +54,32 @@ export default function AdminPage() {
       body: JSON.stringify({ id, status }),
     });
     fetchReports();
+    showToast(`Status updated to ${status}`);
+  };
+
+  const deleteReport = async (id: string) => {
+    const ok = confirm(
+      'This will permanently delete the rejected report. Continue?'
+    );
+    if (!ok) return;
+
+    const res = await fetch(`/api/admin/reports/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (res.ok) {
+      fetchReports();
+      showToast('🗑 Report deleted');
+    } else {
+      showToast('❌ Delete failed');
+    }
   };
 
   const filteredReports = reports.filter(
     (r) => r.status === activeTab
   );
 
-  /* ---------- LOGIN UI ---------- */
+  /* ---------- LOGIN ---------- */
   if (!auth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#020817]">
@@ -103,136 +128,143 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {/* Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredReports.map((r) => (
-          <div
-            key={r.id}
-            className="border border-slate-700 rounded bg-[#0f172a] overflow-hidden"
-          >
-            {/* Image */}
-            <div className="bg-black flex items-center justify-center">
+      {/* Empty State */}
+      {filteredReports.length === 0 ? (
+        <div className="border border-dashed border-slate-700 rounded p-10 text-center">
+          <p className="text-gray-400 text-lg">
+            No {activeTab} reports
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Reports will appear here once marked as {activeTab}.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredReports.map((r) => (
+            <div
+              key={r.id}
+              className="border border-slate-700 rounded bg-[#0f172a]"
+            >
               <img
                 src={r.image_url}
                 alt="report"
-                className="h-64 w-full object-contain"
+                className="h-64 w-full object-contain bg-black"
               />
-            </div>
 
-            {/* Content */}
-            <div className="p-4 space-y-2 text-sm text-slate-300">
-              <p>
-                <span className="text-white font-semibold">Location:</span>{' '}
-                {r.location}
-              </p>
-
-              <p>
-                <span className="text-white font-semibold">Coordinates:</span>{' '}
-                {r.lat}, {r.lng}
-              </p>
-
-              <p>
-                <span className="text-white font-semibold">Severity:</span>{' '}
-                <span
-                  className={`px-2 py-1 rounded text-xs font-semibold ${
-                    r.severity >= 4
-                      ? 'bg-red-600 text-white'
-                      : r.severity === 3
-                      ? 'bg-yellow-500 text-black'
-                      : 'bg-green-600 text-white'
-                  }`}
-                >
-                  {r.severity}
-                </span>
-              </p>
-
-              <p>
-                <span className="text-white font-semibold">Authority:</span>{' '}
-                <span className="px-2 py-1 bg-slate-700 rounded text-xs text-white">
-                  {r.governing_body}
-                </span>
-              </p>
-
-              <p className="text-xs text-slate-400">
-                Submitted:{' '}
-                {new Date(r.created_at).toLocaleString()}
-              </p>
-
-              <a
-                href={`https://www.google.com/maps?q=${r.lat},${r.lng}`}
-                target="_blank"
-                className="text-blue-400 text-xs underline"
-              >
-                View on Google Maps
-              </a>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col gap-2 p-4 border-t border-slate-700">
-              {r.status === 'pending' && (
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => updateStatus(r.id, 'approved')}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded"
+              <div className="p-4 space-y-2 text-sm text-slate-300">
+                <p>
+                  <b className="text-white">Location:</b> {r.location}
+                </p>
+                <p>
+                  <b className="text-white">Coordinates:</b>{' '}
+                  {r.lat}, {r.lng}
+                </p>
+                <p>
+                  <b className="text-white">Severity:</b>{' '}
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-semibold ${
+                      r.severity >= 4
+                        ? 'bg-red-600'
+                        : r.severity === 3
+                        ? 'bg-yellow-500 text-black'
+                        : 'bg-green-600'
+                    }`}
                   >
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => updateStatus(r.id, 'rejected')}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded"
-                  >
-                    Reject
-                  </button>
-                </div>
-              )}
-
-              {r.status === 'approved' && (
-                <>
-                  <span className="text-green-400 text-sm font-semibold">
-                    ✔ Approved
+                    {r.severity}
                   </span>
-                  <div className="flex gap-3">
+                </p>
+                <p className="text-xs text-slate-400">
+                  {new Date(r.created_at).toLocaleString()}
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="p-4 border-t border-slate-700 space-y-2">
+                {r.status === 'pending' && (
+                  <div className="flex gap-2">
                     <button
-                      onClick={() => updateStatus(r.id, 'pending')}
-                      className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-1 rounded text-sm"
+                      onClick={() => updateStatus(r.id, 'approved')}
+                      className="flex-1 bg-green-600 py-2 rounded"
                     >
-                      Move to Pending
+                      Approve
                     </button>
                     <button
                       onClick={() => updateStatus(r.id, 'rejected')}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-1 rounded text-sm"
+                      className="flex-1 bg-red-600 py-2 rounded"
                     >
                       Reject
                     </button>
                   </div>
-                </>
-              )}
+                )}
 
-              {r.status === 'rejected' && (
-                <>
-                  <span className="text-red-400 text-sm font-semibold">
-                    ✖ Declined
-                  </span>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => updateStatus(r.id, 'pending')}
-                      className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-1 rounded text-sm"
-                    >
-                      Move to Pending
-                    </button>
-                    <button
-                      onClick={() => updateStatus(r.id, 'approved')}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-1 rounded text-sm"
-                    >
-                      Approve
-                    </button>
-                  </div>
-                </>
-              )}
+                {r.status === 'approved' && (
+  <>
+    <span className="text-green-400 font-semibold">
+      ✔ Approved
+    </span>
+
+    <div className="flex gap-2">
+      <button
+        onClick={() => updateStatus(r.id, 'pending')}
+        className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-1 rounded text-sm"
+      >
+        Move to Pending
+      </button>
+
+      <button
+        onClick={() => updateStatus(r.id, 'rejected')}
+        className="flex-1 bg-red-600 hover:bg-red-700 text-white py-1 rounded text-sm"
+      >
+        Reject
+      </button>
+    </div>
+  </>
+)}
+
+
+                {r.status === 'rejected' && (
+  <>
+    <span className="text-red-400 font-semibold">
+      ✖ Rejected
+    </span>
+
+    <div className="flex gap-2">
+      <button
+        onClick={() => updateStatus(r.id, 'pending')}
+        className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-1 rounded text-sm"
+      >
+        Move to Pending
+      </button>
+
+      <button
+        onClick={() => updateStatus(r.id, 'approved')}
+        className="flex-1 bg-green-600 hover:bg-green-700 text-white py-1 rounded text-sm"
+      >
+        Approve
+      </button>
+    </div>
+
+    <button
+      onClick={() => deleteReport(r.id)}
+      className="w-full border border-red-500 text-red-400 hover:bg-red-600 hover:text-white py-2 rounded text-sm font-semibold"
+    >
+      🗑 Delete Permanently
+    </button>
+  </>
+)}
+
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 bg-black border border-slate-700 text-white px-4 py-2 rounded shadow-lg">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
