@@ -29,11 +29,13 @@ export default function Hero() {
                         </a>
 
                         <a
-                            href="#how"
-                            className="text-sm font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
-                        >
-                            How it works →
-                        </a>
+  href="#how"
+  className="inline-flex items-center gap-1 text-sm font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+>
+  How it works
+  <span className="animate-bounce">↓</span>
+</a>
+
                     </div>
                 </div>
                 {/* Scroll Indicator */}
