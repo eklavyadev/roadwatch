@@ -36,16 +36,22 @@ export default function ReportPotholePage() {
 
         try {
           const res = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
-          );
+  `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+  {
+    headers: {
+      'User-Agent': 'RoadWatch Hackathon App'
+    }
+  }
+);
 
-          const data = await res.json();
+const data = await res.json();
 
-          if (data.results?.length) {
-            setLocation(data.results[0].formatted_address);
-          } else {
-            setLocation('Unable to resolve address');
-          }
+if (data.display_name) {
+  setLocation(data.display_name);
+} else {
+  setLocation('Location detected');
+}
+
         } catch {
           setLocation('Failed to fetch address');
         }
