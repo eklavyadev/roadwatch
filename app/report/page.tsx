@@ -16,7 +16,7 @@ export default function ReportPotholePage() {
 
   const locationResolved = lat !== null && lng !== null;
 
-  /* ---------- GET LOCATION + AUTO FILL ---------- */
+  /* ---------- GET LOCATION + GOOGLE MAPS ---------- */
   const getLocation = () => {
     setError('');
     setLocation('Detecting location…');
@@ -36,24 +36,40 @@ export default function ReportPotholePage() {
 
         try {
           const res = await fetch(
-  `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-  {
-    headers: {
-      'User-Agent': 'RoadWatch Hackathon App'
-    }
-  }
-);
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+          );
 
-const data = await res.json();
+          const data = await res.json();
 
-if (data.display_name) {
-  setLocation(data.display_name);
-} else {
-  setLocation('Location detected');
-}
+          if (data.status !== 'OK' || !data.results?.length) {
+            setLocation('Location detected');
+            return;
+          }
 
-        } catch {
-          setLocation('Failed to fetch address');
+          const components = data.results[0].address_components;
+
+          const get = (type: string) =>
+            components.find((c: any) => c.types.includes(type))?.long_name;
+
+          const road = get('route');
+          const sublocality = get('sublocality') || get('sublocality_level_1');
+          const city = get('locality') || get('administrative_area_level_2');
+          const state = get('administrative_area_level_1');
+
+          const primary = road || sublocality || city || 'Unknown location';
+          const secondary =
+            road && sublocality
+              ? sublocality
+              : city || state || '';
+
+          setLocation(
+            secondary && secondary !== primary
+              ? `${primary}, ${secondary}`
+              : primary
+          );
+        } catch (err) {
+          console.error(err);
+          setLocation('Failed to resolve address');
         }
       },
       () => {
@@ -100,7 +116,6 @@ if (data.display_name) {
       return;
     }
 
-    // Reset
     setImage(null);
     setLat(null);
     setLng(null);
@@ -116,7 +131,7 @@ if (data.display_name) {
 
         {success && (
           <div className="mb-4 rounded bg-green-600/20 border border-green-600 p-3 text-sm text-green-400">
-            ✅ Pothole reported successfully. It will be verified automatically.
+            ✅ Pothole reported successfully.
           </div>
         )}
 
@@ -150,7 +165,7 @@ if (data.display_name) {
           </div>
         )}
 
-        {/* Location (Disabled Field) */}
+        {/* Location */}
         <label className="block mb-3">
           <span className="text-sm text-gray-300">Detected Location</span>
           <input
@@ -161,7 +176,6 @@ if (data.display_name) {
           />
         </label>
 
-        {/* Detect Location Button (ONLY before resolved) */}
         {!locationResolved && (
           <button
             onClick={getLocation}
@@ -202,7 +216,7 @@ if (data.display_name) {
         </button>
 
         <p className="text-xs text-gray-400 mt-4 text-center">
-          Location is auto‑generated from GPS for accuracy
+          Address resolved via Google Maps for maximum accuracy
         </p>
       </div>
     </div>
