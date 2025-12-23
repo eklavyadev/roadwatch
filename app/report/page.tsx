@@ -6,40 +6,68 @@ const MAX_SIZE_MB = 10;
 
 export default function ReportPotholePage() {
   const [image, setImage] = useState<File | null>(null);
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState('Waiting for location…');
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [severity, setSeverity] = useState(3);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
-  /* ---------- GET LOCATION ---------- */
+  const locationResolved = lat !== null && lng !== null;
+
+  /* ---------- GET LOCATION + AUTO FILL ---------- */
   const getLocation = () => {
+    setError('');
+    setLocation('Detecting location…');
+
     if (!navigator.geolocation) {
-      alert('Geolocation not supported');
+      setLocation('Geolocation not supported');
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLat(pos.coords.latitude);
-        setLng(pos.coords.longitude);
+      async (pos) => {
+        const latitude = pos.coords.latitude;
+        const longitude = pos.coords.longitude;
+
+        setLat(latitude);
+        setLng(longitude);
+
+        try {
+          const res = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+          );
+
+          const data = await res.json();
+
+          if (data.results?.length) {
+            setLocation(data.results[0].formatted_address);
+          } else {
+            setLocation('Unable to resolve address');
+          }
+        } catch {
+          setLocation('Failed to fetch address');
+        }
       },
-      () => alert('Location permission denied'),
+      () => {
+        setLocation('Location permission denied');
+      },
       { enableHighAccuracy: true }
     );
   };
 
   /* ---------- SUBMIT ---------- */
   const submitReport = async () => {
-    if (!image || !location || lat === null || lng === null) {
-      alert('Please complete all fields');
+    setError('');
+
+    if (!image || !locationResolved) {
+      setError('Please upload an image and detect location');
       return;
     }
 
-    // 🔴 FILE SIZE CHECK (CLIENT)
     if (image.size > MAX_SIZE_MB * 1024 * 1024) {
-      alert('Please upload an image smaller than 10MB');
+      setError('Please upload an image smaller than 10MB');
       return;
     }
 
@@ -62,15 +90,15 @@ export default function ReportPotholePage() {
     setLoading(false);
 
     if (!res.ok) {
-      alert(data.error || 'Something went wrong');
+      setError(data.error || 'Something went wrong');
       return;
     }
 
-    // reset form
+    // Reset
     setImage(null);
-    setLocation('');
     setLat(null);
     setLng(null);
+    setLocation('Waiting for location…');
     setSeverity(3);
     setSuccess(true);
   };
@@ -82,7 +110,13 @@ export default function ReportPotholePage() {
 
         {success && (
           <div className="mb-4 rounded bg-green-600/20 border border-green-600 p-3 text-sm text-green-400">
-            ✅ Pothole reported successfully. It will be reviewed shortly.
+            ✅ Pothole reported successfully. It will be verified automatically.
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 rounded bg-red-600/20 border border-red-600 p-3 text-sm text-red-400">
+            ⚠️ {error}
           </div>
         )}
 
@@ -110,33 +144,32 @@ export default function ReportPotholePage() {
           </div>
         )}
 
-        {/* Location */}
-        <label className="block mb-4">
-          <span className="text-sm text-gray-300">Location description</span>
+        {/* Location (Disabled Field) */}
+        <label className="block mb-3">
+          <span className="text-sm text-gray-300">Detected Location</span>
           <input
             type="text"
-            placeholder="e.g. Near Borjhar Airport Gate"
             value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="mt-2 w-full rounded bg-[#020817] border border-slate-600 p-2"
+            disabled
+            className="mt-2 w-full rounded bg-[#020817] border border-slate-600 p-2 text-gray-400 cursor-not-allowed"
           />
         </label>
 
-        {/* Coordinates */}
-        <div className="mb-4">
+        {/* Detect Location Button (ONLY before resolved) */}
+        {!locationResolved && (
           <button
             onClick={getLocation}
-            className="bg-cyan-500 text-black px-4 py-2 rounded text-sm font-semibold"
+            className="mb-4 bg-cyan-500 text-black px-4 py-2 rounded text-sm font-semibold"
           >
-            📍 Get My Location
+            📍 Detect Location
           </button>
+        )}
 
-          {lat && lng && (
-            <p className="text-xs text-gray-400 mt-2">
-              Lat: {lat.toFixed(5)}, Lng: {lng.toFixed(5)}
-            </p>
-          )}
-        </div>
+        {locationResolved && (
+          <p className="text-xs text-gray-500 mb-4">
+            Lat: {lat!.toFixed(5)}, Lng: {lng!.toFixed(5)}
+          </p>
+        )}
 
         {/* Severity */}
         <label className="block mb-6">
@@ -163,7 +196,7 @@ export default function ReportPotholePage() {
         </button>
 
         <p className="text-xs text-gray-400 mt-4 text-center">
-          Reports are reviewed before appearing publicly
+          Location is auto‑generated from GPS for accuracy
         </p>
       </div>
     </div>
