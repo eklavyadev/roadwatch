@@ -6,9 +6,18 @@ const MAX_SIZE_MB = 10;
 
 export default function ReportPotholePage() {
   const [image, setImage] = useState<File | null>(null);
-  const [location, setLocation] = useState('Waiting for location…');
+
+  // System-detected (read-only)
+  const [autoLocation, setAutoLocation] = useState('Not detected yet');
+
+  // User-provided
+  const [landmark, setLandmark] = useState('');
+
+  // GPS
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
+  const [accuracy, setAccuracy] = useState<number | null>(null);
+
   const [severity, setSeverity] = useState(3);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -19,10 +28,9 @@ export default function ReportPotholePage() {
   /* ---------- GET LOCATION + GOOGLE MAPS ---------- */
   const getLocation = () => {
     setError('');
-    setLocation('Detecting location…');
 
     if (!navigator.geolocation) {
-      setLocation('Geolocation not supported');
+      setError('Geolocation not supported on this device');
       return;
     }
 
@@ -33,6 +41,7 @@ export default function ReportPotholePage() {
 
         setLat(latitude);
         setLng(longitude);
+        setAccuracy(Math.round(pos.coords.accuracy));
 
         try {
           const res = await fetch(
@@ -41,39 +50,17 @@ export default function ReportPotholePage() {
 
           const data = await res.json();
 
-          if (data.status !== 'OK' || !data.results?.length) {
-            setLocation('Location detected');
-            return;
+          if (data.status === 'OK' && data.results?.length) {
+            setAutoLocation(data.results[0].formatted_address);
+          } else {
+            setAutoLocation('GPS reported location');
           }
-
-          const components = data.results[0].address_components;
-
-          const get = (type: string) =>
-            components.find((c: any) => c.types.includes(type))?.long_name;
-
-          const road = get('route');
-          const sublocality = get('sublocality') || get('sublocality_level_1');
-          const city = get('locality') || get('administrative_area_level_2');
-          const state = get('administrative_area_level_1');
-
-          const primary = road || sublocality || city || 'Unknown location';
-          const secondary =
-            road && sublocality
-              ? sublocality
-              : city || state || '';
-
-          setLocation(
-            secondary && secondary !== primary
-              ? `${primary}, ${secondary}`
-              : primary
-          );
-        } catch (err) {
-          console.error(err);
-          setLocation('Failed to resolve address');
+        } catch {
+          setAutoLocation('GPS reported location');
         }
       },
       () => {
-        setLocation('Location permission denied');
+        setError('Location permission denied');
       },
       { enableHighAccuracy: true }
     );
@@ -96,9 +83,14 @@ export default function ReportPotholePage() {
     setLoading(true);
     setSuccess(false);
 
+    // ✅ FINAL LOCATION STRING (approved logic)
+    const finalLocation = landmark.trim()
+      ? `(${landmark.trim()}) ${autoLocation}`
+      : autoLocation;
+
     const formData = new FormData();
     formData.append('image', image);
-    formData.append('location', location);
+    formData.append('location', finalLocation);
     formData.append('lat', String(lat));
     formData.append('lng', String(lng));
     formData.append('severity', String(severity));
@@ -116,10 +108,13 @@ export default function ReportPotholePage() {
       return;
     }
 
+    // Reset
     setImage(null);
+    setLandmark('');
     setLat(null);
     setLng(null);
-    setLocation('Waiting for location…');
+    setAccuracy(null);
+    setAutoLocation('Not detected yet');
     setSeverity(3);
     setSuccess(true);
   };
@@ -165,12 +160,28 @@ export default function ReportPotholePage() {
           </div>
         )}
 
-        {/* Location */}
-        <label className="block mb-3">
-          <span className="text-sm text-gray-300">Detected Location</span>
+        {/* Nearest Landmark */}
+        <label className="block mb-4">
+          <span className="text-sm text-gray-300">
+            Nearest landmark (optional)
+          </span>
           <input
             type="text"
-            value={location}
+            placeholder="e.g. Near bus stop, opposite school, near lake"
+            value={landmark}
+            onChange={(e) => setLandmark(e.target.value)}
+            className="mt-2 w-full rounded bg-[#020817] border border-slate-600 p-2"
+          />
+        </label>
+
+        {/* Auto Location */}
+        <label className="block mb-4">
+          <span className="text-sm text-gray-300">
+            📍 Auto‑detected area (from GPS)
+          </span>
+          <input
+            type="text"
+            value={autoLocation}
             disabled
             className="mt-2 w-full rounded bg-[#020817] border border-slate-600 p-2 text-gray-400 cursor-not-allowed"
           />
@@ -186,9 +197,14 @@ export default function ReportPotholePage() {
         )}
 
         {locationResolved && (
-          <p className="text-xs text-gray-500 mb-4">
-            Lat: {lat!.toFixed(5)}, Lng: {lng!.toFixed(5)}
-          </p>
+          <div className="mb-4 text-xs text-gray-400 space-y-1">
+            <p>
+              Lat: {lat!.toFixed(5)}, Lng: {lng!.toFixed(5)}
+            </p>
+            {accuracy !== null && (
+              <p>📡 GPS Accuracy: ± {accuracy} meters</p>
+            )}
+          </div>
         )}
 
         {/* Severity */}
@@ -216,7 +232,10 @@ export default function ReportPotholePage() {
         </button>
 
         <p className="text-xs text-gray-400 mt-4 text-center">
-          Address resolved via Google Maps for maximum accuracy
+          Reports are published after automated verification.
+          <br />
+          If the detected location does not match your surroundings, disabling
+          VPN or private browsing can help improve accuracy for collective benefit.
         </p>
       </div>
     </div>
