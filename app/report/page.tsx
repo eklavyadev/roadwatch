@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 const MAX_SIZE_MB = 10;
+const MAX_GPS_ACCURACY = 200; // meters
 
 export default function ReportPotholePage() {
   const [image, setImage] = useState<File | null>(null);
@@ -24,6 +25,8 @@ export default function ReportPotholePage() {
   const [error, setError] = useState('');
 
   const locationResolved = lat !== null && lng !== null;
+  const isAccuracyAcceptable =
+    accuracy !== null && accuracy <= MAX_GPS_ACCURACY;
 
   /* ---------- GET LOCATION + GOOGLE MAPS ---------- */
   const getLocation = () => {
@@ -75,6 +78,13 @@ export default function ReportPotholePage() {
       return;
     }
 
+    if (!isAccuracyAcceptable) {
+      setError(
+        'GPS accuracy is too low. Please move to an open area or disable VPN and try again.'
+      );
+      return;
+    }
+
     if (image.size > MAX_SIZE_MB * 1024 * 1024) {
       setError('Please upload an image smaller than 10MB');
       return;
@@ -83,7 +93,6 @@ export default function ReportPotholePage() {
     setLoading(true);
     setSuccess(false);
 
-    // ✅ FINAL LOCATION STRING (approved logic)
     const finalLocation = landmark.trim()
       ? `(${landmark.trim()}) ${autoLocation}`
       : autoLocation;
@@ -196,13 +205,26 @@ export default function ReportPotholePage() {
           </button>
         )}
 
-        {locationResolved && (
+        {locationResolved && accuracy !== null && (
           <div className="mb-4 text-xs text-gray-400 space-y-1">
             <p>
               Lat: {lat!.toFixed(5)}, Lng: {lng!.toFixed(5)}
             </p>
-            {accuracy !== null && (
-              <p>📡 GPS Accuracy: ± {accuracy} meters</p>
+            <p>📡 GPS Accuracy: ± {accuracy} meters</p>
+
+            {!isAccuracyAcceptable && (
+              <p className='text-red-400'>
+                Location accuracy is too low. Please move to an open area or
+                disable VPN and try again. Go to 
+                <a
+                  href="https://maps.google.com"
+                  target="_blank"
+                  className="underline text-cyan-400 mx-1"
+                >
+                maps.google.com
+                </a>
+                 for resetting GPS. Current maximum acceptable accuracy is ±{MAX_GPS_ACCURACY} meters.
+              </p>
             )}
           </div>
         )}
@@ -225,7 +247,7 @@ export default function ReportPotholePage() {
 
         <button
           onClick={submitReport}
-          disabled={loading}
+          disabled={loading || !isAccuracyAcceptable}
           className="w-full bg-white text-black py-3 rounded font-semibold disabled:opacity-60"
         >
           {loading ? 'Submitting…' : 'Submit Report'}

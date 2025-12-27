@@ -86,12 +86,12 @@ export function ApprovedPotholes() {
                 {r.location}
               </p>
 
-              <p>
+              {/* <p>
                 <span className="text-white font-medium">
                   Authority:
                 </span>{' '}
                 {r.governing_body || 'Unknown'}
-              </p>
+              </p> */}
 
               <p>
                 <span className="text-white font-medium">

@@ -11,7 +11,7 @@ export default function ImpactPage() {
                     <section className="text-center max-w-3xl mx-auto">
                         <h1 className="text-3xl sm:text-4xl font-bold">
                             Creating Real‑World Impact with{' '}
-                            <span className="text-cyan-400">RoadWatch</span>
+                            Road<span className="text-cyan-400">Watch</span>
                         </h1>
                         <p className="mt-6 text-gray-400 text-lg leading-relaxed">
                             RoadWatch is designed to improve road safety, civic transparency,
