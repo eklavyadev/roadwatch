@@ -28,7 +28,7 @@ export default function ReportPotholePage() {
   const isAccuracyAcceptable =
     accuracy !== null && accuracy <= MAX_GPS_ACCURACY;
 
-  /* ---------- GET LOCATION + GOOGLE MAPS ---------- */
+  /* ---------- GET LOCATION ---------- */
   const getLocation = () => {
     setError('');
 
@@ -80,7 +80,7 @@ export default function ReportPotholePage() {
 
     if (!isAccuracyAcceptable) {
       setError(
-        'GPS accuracy is too low. Please move to an open area or disable VPN and try again.'
+        'Location accuracy is too low. Please retry from an open area.'
       );
       return;
     }
@@ -169,21 +169,21 @@ export default function ReportPotholePage() {
           </div>
         )}
 
-        {/* Nearest Landmark */}
+        {/* Landmark */}
         <label className="block mb-4">
           <span className="text-sm text-gray-300">
             Nearest landmark (optional)
           </span>
           <input
             type="text"
-            placeholder="e.g. Near bus stop, opposite school, near lake"
+            placeholder="e.g. Near bus stop, opposite school"
             value={landmark}
             onChange={(e) => setLandmark(e.target.value)}
             className="mt-2 w-full rounded bg-[#020817] border border-slate-600 p-2"
           />
         </label>
 
-        {/* Auto Location */}
+        {/* Auto location */}
         <label className="block mb-4">
           <span className="text-sm text-gray-300">
             📍 Auto‑detected area (from GPS)
@@ -213,17 +213,18 @@ export default function ReportPotholePage() {
             <p>📡 GPS Accuracy: ± {accuracy} meters</p>
 
             {!isAccuracyAcceptable && (
-              <p className='text-red-400'>
-                Location accuracy is too low. Please move to an open area or
-                disable VPN and try again. Go to 
+              <p className="text-red-400">
+                Location accuracy is too low. Try moving to an open area or reset
+                GPS via
                 <a
                   href="https://maps.google.com"
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="underline text-cyan-400 mx-1"
                 >
-                maps.google.com
+                  maps.google.com
                 </a>
-                 for resetting GPS. Current maximum acceptable accuracy is ±{MAX_GPS_ACCURACY} meters.
+                (required accuracy ≤ {MAX_GPS_ACCURACY}m).
               </p>
             )}
           </div>
@@ -247,7 +248,7 @@ export default function ReportPotholePage() {
 
         <button
           onClick={submitReport}
-          disabled={loading || !isAccuracyAcceptable}
+          disabled={loading || !locationResolved || !isAccuracyAcceptable}
           className="w-full bg-white text-black py-3 rounded font-semibold disabled:opacity-60"
         >
           {loading ? 'Submitting…' : 'Submit Report'}
@@ -256,8 +257,7 @@ export default function ReportPotholePage() {
         <p className="text-xs text-gray-400 mt-4 text-center">
           Reports are published after automated verification.
           <br />
-          If the detected location does not match your surroundings, disabling
-          VPN or private browsing can help improve accuracy for collective benefit.
+          Accurate GPS improves data quality for everyone.
         </p>
       </div>
     </div>

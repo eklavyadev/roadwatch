@@ -7,6 +7,7 @@ const supabase = createClient(
 );
 
 const MAX_SIZE_MB = 10;
+const DUPLICATE_RADIUS_METERS = 200;
 
 /* ---------- SAFE FILE NAME ---------- */
 function generateSafeFileName(file: File) {
@@ -46,6 +47,32 @@ export async function POST(req: Request) {
       );
     }
 
+    /* ---------- 🔁 DUPLICATE CHECK (200m RADIUS) ---------- */
+    const { data: nearbyReports, error: duplicateError } =
+      await supabase.rpc('check_nearby_reports', {
+        input_lat: lat,
+        input_lng: lng,
+        radius_meters: DUPLICATE_RADIUS_METERS,
+      });
+
+    if (duplicateError) {
+      console.error('DUPLICATE CHECK ERROR:', duplicateError);
+      return NextResponse.json(
+        { error: 'Failed to check nearby reports' },
+        { status: 500 }
+      );
+    }
+
+    if (nearbyReports && nearbyReports.length > 0) {
+      return NextResponse.json(
+        {
+          error:
+            'A pothole has already been reported nearby and is published or under review. Please check the homepage/map for existing reports.',
+        },
+        { status: 409 } // Conflict
+      );
+    }
+
     /* ---------- UPLOAD IMAGE ---------- */
     const fileName = generateSafeFileName(image);
 
@@ -67,7 +94,7 @@ export async function POST(req: Request) {
       .from('reports')
       .getPublicUrl(fileName);
 
-    /* ---------- INSERT ROW (RETURN DATA) ---------- */
+    /* ---------- INSERT REPORT ---------- */
     const { data: inserted, error: insertError } = await supabase
       .from('reports')
       .insert({
@@ -99,13 +126,11 @@ export async function POST(req: Request) {
         imageUrl: publicUrlData.publicUrl,
       }),
     }).catch((err) => {
-      // AI failure must NOT break upload
       console.error('AI TRIGGER FAILED:', err);
     });
 
     /* ---------- RESPONSE ---------- */
     return NextResponse.json({ success: true });
-
   } catch (err) {
     console.error('SERVER ERROR:', err);
     return NextResponse.json(
