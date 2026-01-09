@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -11,46 +11,56 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params; // ✅ FIX
+    // ✅ MUST await params
+    const { id } = await context.params;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Invalid report id" },
+        { status: 400 }
+      );
+    }
 
     /* ---------- FETCH IMAGE URL ---------- */
     const { data: report, error: fetchError } = await supabase
-      .from('reports')
-      .select('image_url')
-      .eq('id', id)
+      .from("reports")
+      .select("image_url")
+      .eq("id", id)
       .single();
 
     if (fetchError || !report) {
       return NextResponse.json(
-        { error: 'Report not found' },
+        { error: "Report not found" },
         { status: 404 }
       );
     }
 
     /* ---------- DELETE IMAGE ---------- */
-    const imagePath = report.image_url.split('/reports/')[1];
-    if (imagePath) {
-      await supabase.storage.from('reports').remove([imagePath]);
+    if (report.image_url?.includes("/reports/")) {
+      const imagePath = report.image_url.split("/reports/")[1];
+      if (imagePath) {
+        await supabase.storage.from("reports").remove([imagePath]);
+      }
     }
 
     /* ---------- DELETE ROW ---------- */
     const { error: deleteError } = await supabase
-      .from('reports')
+      .from("reports")
       .delete()
-      .eq('id', id);
+      .eq("id", id);
 
     if (deleteError) {
       return NextResponse.json(
-        { error: 'Failed to delete report' },
+        { error: "Failed to delete report" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('DELETE ERROR:', err);
+    console.error("DELETE ERROR:", err);
     return NextResponse.json(
-      { error: 'Server error' },
+      { error: "Server error" },
       { status: 500 }
     );
   }

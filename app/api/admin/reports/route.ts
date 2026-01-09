@@ -1,26 +1,32 @@
-import { NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-const pool = new Pool({
-  connectionString: process.env.DB_URI,
-  ssl: { rejectUnauthorized: false },
-  max: 1, // VERY important for serverless
-});
-
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function GET() {
   try {
-    const res = await pool.query(
-      "SELECT * FROM reports ORDER BY created_at DESC"
-    );
-    return NextResponse.json(res.rows);
-  } catch (error: any) {
-    console.error('FULL DB ERROR:', error);
+    const { data, error } = await supabase
+      .from("reports")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error("SUPABASE ERROR:", error);
+      return NextResponse.json(
+        { message: "Database error", detail: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(data);
+  } catch (err: any) {
+    console.error("UNEXPECTED ERROR:", err);
     return NextResponse.json(
-      {
-        message: 'Database error',
-        detail: error.message,
-      },
+      { message: "Unexpected error", detail: err.message },
       { status: 500 }
     );
   }
