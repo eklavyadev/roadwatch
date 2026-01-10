@@ -2,16 +2,64 @@
 
 import { useState } from 'react';
 
+/* ---------- TYPES ---------- */
 type Report = {
   id: string;
   image_url: string;
   location: string;
   lat: number;
   lng: number;
-  severity: number;
+  type: 'pothole' | 'streetlight' | 'traffic_signal' | 'open_drainage';
+  impact_level: number; // 1 | 2 | 3
   governing_body: string;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
+};
+
+/* ---------- LABELS ---------- */
+const TYPE_LABEL: Record<Report['type'], string> = {
+  pothole: '🕳️ Pothole',
+  streetlight: '💡 Streetlight',
+  traffic_signal: '🚦 Traffic Signal',
+  open_drainage: '🚧 Open Drainage',
+};
+
+const IMPACT_LABEL: Record<number, string> = {
+  1: 'Low',
+  2: 'Medium',
+  3: 'High',
+};
+
+const IMPACT_BADGE: Record<number, string> = {
+  1: 'bg-green-600',
+  2: 'bg-yellow-500 text-black',
+  3: 'bg-red-600',
+};
+
+const IMPACT_DESCRIPTION: Record<
+  Report['type'],
+  Record<number, string>
+> = {
+  pothole: {
+    1: '🕳️ Minor surface damage',
+    2: '🕳️ Moderate dip / uneven road',
+    3: '🕳️ Severe accident‑prone pothole',
+  },
+  streetlight: {
+    1: '💡 Flickering occasionally',
+    2: '💡 Often off or unstable',
+    3: '💡 Completely not working',
+  },
+  traffic_signal: {
+    1: '🚦 Responding with delay',
+    2: '🚦 Stuck on one color',
+    3: '🚦 Not functioning',
+  },
+  open_drainage: {
+    1: '🚧 Partially open drain',
+    2: '🚧 Fully open drain',
+    3: '🚧 Dangerous open drainage',
+  },
 };
 
 export default function AdminPage() {
@@ -128,14 +176,11 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {/* Empty State */}
+      {/* Reports */}
       {filteredReports.length === 0 ? (
         <div className="border border-dashed border-slate-700 rounded p-10 text-center">
           <p className="text-gray-400 text-lg">
             No {activeTab} reports
-          </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Reports will appear here once marked as {activeTab}.
           </p>
         </div>
       ) : (
@@ -152,28 +197,28 @@ export default function AdminPage() {
               />
 
               <div className="p-4 space-y-2 text-sm text-slate-300">
-                <p>
-                  <b className="text-white">Location:</b> {r.location}
+                <p className="text-white font-semibold">
+                  {r.location}
                 </p>
+
                 <p>
-                  <b className="text-white">Coordinates:</b>{' '}
-                  {r.lat}, {r.lng}
+                  <b>Type:</b> {TYPE_LABEL[r.type]}
                 </p>
+
                 <p>
-                  <b className="text-white">Severity:</b>{' '}
+                  <b>Impact:</b>{' '}
                   <span
-                    className={`px-2 py-1 rounded text-xs font-semibold ${
-                      r.severity >= 4
-                        ? 'bg-red-600'
-                        : r.severity === 3
-                        ? 'bg-yellow-500 text-black'
-                        : 'bg-green-600'
-                    }`}
+                    className={`px-2 py-1 rounded text-xs font-semibold ${IMPACT_BADGE[r.impact_level]}`}
                   >
-                    {r.severity}
+                    {IMPACT_LABEL[r.impact_level]}
                   </span>
                 </p>
+
                 <p className="text-xs text-slate-400">
+                  {IMPACT_DESCRIPTION[r.type]?.[r.impact_level]}
+                </p>
+
+                <p className="text-xs text-slate-500">
                   {new Date(r.created_at).toLocaleString()}
                 </p>
               </div>
@@ -197,62 +242,14 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                {r.status === 'approved' && (
-  <>
-    <span className="text-green-400 font-semibold">
-      ✔ Approved
-    </span>
-
-    <div className="flex gap-2">
-      <button
-        onClick={() => updateStatus(r.id, 'pending')}
-        className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-1 rounded text-sm"
-      >
-        Move to Pending
-      </button>
-
-      <button
-        onClick={() => updateStatus(r.id, 'rejected')}
-        className="flex-1 bg-red-600 hover:bg-red-700 text-white py-1 rounded text-sm"
-      >
-        Reject
-      </button>
-    </div>
-  </>
-)}
-
-
                 {r.status === 'rejected' && (
-  <>
-    <span className="text-red-400 font-semibold">
-      ✖ Rejected
-    </span>
-
-    <div className="flex gap-2">
-      <button
-        onClick={() => updateStatus(r.id, 'pending')}
-        className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-1 rounded text-sm"
-      >
-        Move to Pending
-      </button>
-
-      <button
-        onClick={() => updateStatus(r.id, 'approved')}
-        className="flex-1 bg-green-600 hover:bg-green-700 text-white py-1 rounded text-sm"
-      >
-        Approve
-      </button>
-    </div>
-
-    <button
-      onClick={() => deleteReport(r.id)}
-      className="w-full border border-red-500 text-red-400 hover:bg-red-600 hover:text-white py-2 rounded text-sm font-semibold"
-    >
-      🗑 Delete Permanently
-    </button>
-  </>
-)}
-
+                  <button
+                    onClick={() => deleteReport(r.id)}
+                    className="w-full border border-red-500 text-red-400 hover:bg-red-600 hover:text-white py-2 rounded text-sm font-semibold"
+                  >
+                    🗑 Delete Permanently
+                  </button>
+                )}
               </div>
             </div>
           ))}
