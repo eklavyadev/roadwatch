@@ -242,13 +242,47 @@ export default function AdminPage() {
                   </div>
                 )}
 
+                {r.status === 'approved' && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => updateStatus(r.id, 'pending')}
+                      className="flex-1 bg-slate-600 py-2 rounded text-sm"
+                    >
+                      Move to Pending
+                    </button>
+                    <button
+                      onClick={() => updateStatus(r.id, 'rejected')}
+                      className="flex-1 bg-red-600 py-2 rounded text-sm"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                )}
+
                 {r.status === 'rejected' && (
-                  <button
-                    onClick={() => deleteReport(r.id)}
-                    className="w-full border border-red-500 text-red-400 hover:bg-red-600 hover:text-white py-2 rounded text-sm font-semibold"
-                  >
-                    🗑 Delete Permanently
-                  </button>
+                  <>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => updateStatus(r.id, 'pending')}
+                        className="flex-1 bg-slate-600 py-2 rounded text-sm"
+                      >
+                        Move to Pending
+                      </button>
+                      <button
+                        onClick={() => updateStatus(r.id, 'approved')}
+                        className="flex-1 bg-green-600 py-2 rounded text-sm"
+                      >
+                        Approve
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => deleteReport(r.id)}
+                      className="w-full border border-red-500 text-red-400 hover:bg-red-600 hover:text-white py-2 rounded text-sm font-semibold"
+                    >
+                      🗑 Delete Permanently
+                    </button>
+                  </>
                 )}
               </div>
             </div>
