@@ -8,7 +8,8 @@ type Report = {
   location: string;
   lat: number;
   lng: number;
-  severity: number;
+  type: 'pothole' | 'streetlight' | 'traffic_signal' | 'open_drainage';
+  impact_level: number; // 1 | 2 | 3
   governing_body: string;
   created_at: string;
   status: string;
@@ -16,7 +17,56 @@ type Report = {
 
 const PAGE_SIZE = 6;
 
-export function ApprovedPotholes() {
+/* ---------- LABEL + COLOR HELPERS ---------- */
+const IMPACT_LABEL: Record<number, string> = {
+  1: 'Low',
+  2: 'Medium',
+  3: 'High',
+};
+
+const IMPACT_BADGE_CLASS: Record<number, string> = {
+  1: 'bg-green-600 text-white',
+  2: 'bg-yellow-500 text-black',
+  3: 'bg-red-600 text-white',
+};
+
+const TYPE_LABEL: Record<Report['type'], string> = {
+  pothole: 'Pothole',
+  streetlight: 'Streetlight',
+  traffic_signal: 'Traffic Signal',
+  open_drainage: 'Open Drainage',
+};
+
+/* ---------- PUBLIC DESCRIPTION HELPERS ---------- */
+const IMPACT_DESCRIPTION: Record<
+  Report['type'],
+  Record<number, string>
+> = {
+  pothole: {
+    1: '🕳️ Minor surface damage',
+    2: '🕳️ Moderate dip / uneven road',
+    3: '🕳️ Severe accident‑prone pothole',
+  },
+  streetlight: {
+    1: '💡 Streetlight flickering occasionally',
+    2: '💡 Streetlight often off or unstable',
+    3: '💡 Streetlight completely not working',
+  },
+  traffic_signal: {
+    1: '🚦 Signal responding with delay',
+    2: '🚦 Signal stuck on one color',
+    3: '🚦 Traffic signal not functioning',
+  },
+  open_drainage: {
+    1: '🚧 Drain partially open',
+    2: '🚧 Drain fully open',
+    3: '🚧 Deep open drain posing danger',
+  },
+};
+
+
+
+export function ApprovedReports() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -47,10 +97,10 @@ export function ApprovedPotholes() {
     return (
       <div className="border border-dashed border-slate-700 rounded p-8 text-center">
         <p className="text-gray-400">
-          No verified pothole reports yet.
+          No verified reports yet.
         </p>
         <p className="text-sm text-gray-500 mt-2">
-          Be the first to report a road issue and make an impact 🚧
+          Be the first to report a civic issue and make an impact 🚧
         </p>
       </div>
     );
@@ -66,72 +116,81 @@ export function ApprovedPotholes() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {visibleReports.map((r) => (
-          <div
-            key={r.id}
-            className="bg-[#0f172a] border border-slate-700 rounded overflow-hidden"
-          >
-            {/* Image */}
-            <div className="bg-black">
-              <img
-                src={r.image_url}
-                alt="pothole"
-                className="h-48 w-full object-cover"
-              />
-            </div>
+        {visibleReports.map((r) => {
+          const level = Number(r.impact_level);
 
-            {/* Content */}
-            <div className="p-4 space-y-2 text-sm text-slate-300">
-              <p className="text-white font-semibold">
-                {r.location}
-              </p>
+          return (
+            <div
+              key={r.id}
+              className="bg-[#0f172a] border border-slate-700 rounded overflow-hidden"
+            >
+              {/* Image */}
+              <div className="bg-black">
+                <img
+                  src={r.image_url}
+                  alt={r.type}
+                  className="h-48 w-full object-cover"
+                />
+              </div>
 
-              {/* <p>
-                <span className="text-white font-medium">
-                  Authority:
-                </span>{' '}
-                {r.governing_body || 'Unknown'}
-              </p> */}
+              {/* Content */}
+              <div className="p-4 space-y-2 text-sm text-slate-300">
+                <p className="text-white font-semibold">
+                  {r.location}
+                </p>
 
-              <p>
-                <span className="text-white font-medium">
-                  Coordinates:
-                </span>{' '}
-                {r.lat.toFixed(5)}, {r.lng.toFixed(5)}
-              </p>
+                <p>
+                  <span className="text-white font-medium">
+                    Issue Type:
+                  </span>{' '}
+                  {TYPE_LABEL[r.type]}
+                </p>
 
-              <p>
-                <span className="text-white font-medium">
-                  Severity:
-                </span>{' '}
-                <span
-                  className={`px-2 py-1 rounded text-xs font-semibold ${
-                    r.severity >= 4
-                      ? 'bg-red-600 text-white'
-                      : r.severity === 3
-                      ? 'bg-yellow-500 text-black'
-                      : 'bg-green-600 text-white'
-                  }`}
+                <p>
+                  <span className="text-white font-medium">
+                    Coordinates:
+                  </span>{' '}
+                  {r.lat.toFixed(5)}, {r.lng.toFixed(5)}
+                </p>
+
+                <p>
+                  <span className="text-white font-medium">
+                    Impact Level:
+                  </span>{' '}
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-semibold ${
+                      IMPACT_BADGE_CLASS[level] ??
+                      'bg-slate-600 text-white'
+                    }`}
+                  >
+                    {IMPACT_LABEL[level] ?? 'Unknown'}
+                  </span>
+                </p>
+
+                {/* ✅ Public-friendly description */}
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {IMPACT_DESCRIPTION[r.type]?.[Number(r.impact_level)] ??
+                    'No description available'}
+                </p>
+
+
+                <p className="text-xs text-slate-400">
+                  Reported on:{' '}
+                  {new Date(r.created_at).toLocaleDateString()}
+                </p>
+
+                <a
+                  href={`https://www.google.com/maps?q=${r.lat},${r.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cyan-400 text-xs underline"
                 >
-                  {r.severity}
-                </span>
-              </p>
-
-              <p className="text-xs text-slate-400">
-                Reported on:{' '}
-                {new Date(r.created_at).toLocaleDateString()}
-              </p>
-
-              <a
-                href={`https://www.google.com/maps?q=${r.lat},${r.lng}`}
-                target="_blank"
-                className="text-cyan-400 text-xs underline"
-              >
-                View on Google Maps
-              </a>
+                  View on Google Maps
+                </a>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ---------- NAVIGATION ---------- */}

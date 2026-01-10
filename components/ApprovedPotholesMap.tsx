@@ -13,10 +13,35 @@ type Report = {
   lat: number;
   lng: number;
   location: string;
-  severity: number;
+  type: 'pothole' | 'streetlight' | 'traffic_signal' | 'open_drainage';
+  impact_level: number;
 };
 
-export default function ApprovedPotholesMap() {
+/* ---------- DESCRIPTION (SAME AS FEED) ---------- */
+const DESCRIPTION: Record<Report['type'], Record<number, string>> = {
+  pothole: {
+    1: '🕳️ Minor surface damage',
+    2: '🕳️ Moderate dip / uneven road',
+    3: '🕳️ Severe accident‑prone pothole',
+  },
+  streetlight: {
+    1: '💡 Streetlight flickering',
+    2: '💡 Streetlight often off',
+    3: '💡 Streetlight not working',
+  },
+  traffic_signal: {
+    1: '🚦 Signal responding with delay',
+    2: '🚦 Signal stuck on one color',
+    3: '🚦 Traffic signal not functioning',
+  },
+  open_drainage: {
+    1: '🚧 Drain partially open',
+    2: '🚧 Drain fully open',
+    3: '🚧 Hazardous open drainage',
+  },
+};
+
+export default function ApprovedReportsMap() {
   const [reports, setReports] = useState<Report[]>([]);
   const [active, setActive] = useState<Report | null>(null);
 
@@ -39,7 +64,7 @@ export default function ApprovedPotholesMap() {
   if (reports.length === 0) {
     return (
       <p className="text-gray-400 text-sm">
-        No approved potholes to display on map yet.
+        No approved reports to display on the map yet.
       </p>
     );
   }
@@ -70,20 +95,12 @@ export default function ApprovedPotholesMap() {
     position={{ lat: active.lat, lng: active.lng }}
     onCloseClick={() => setActive(null)}
   >
-    <div
-      style={{
-        background: '#0f172a',
-        color: 'white',
-        padding: '8px',
-        borderRadius: '6px',
-        minWidth: '180px',
-      }}
-    >
-      <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+    <div style={{ color: '#020817', fontSize: '12px' }}>
+      <p style={{ fontWeight: 600, marginBottom: '4px' }}>
         {active.location}
       </p>
-      <p style={{ fontSize: '12px', opacity: 0.8 }}>
-        Severity: {active.severity}
+      <p>
+        {DESCRIPTION[active.type]?.[Number(active.impact_level)]}
       </p>
     </div>
   </InfoWindow>

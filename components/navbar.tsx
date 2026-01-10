@@ -1,11 +1,8 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Dialog, DialogPanel } from '@headlessui/react'
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
-import { ChevronDownIcon } from '@heroicons/react/24/outline'
-
-
+import { useState } from 'react';
+import { Dialog, DialogPanel } from '@headlessui/react';
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -14,20 +11,17 @@ const navigation = [
   { name: 'API Docs', href: '/api' },
   { name: 'Tech Stack', href: '/tech' },
   { name: 'Impact', href: '/impact' },
-
-]
-
-
-
+];
 
 export default function Navbar() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div>
       {/* NAVBAR */}
-      <header className="absolute inset-x-0 top-0 z-50 ">
+      <header className="absolute inset-x-0 top-0 z-50">
         <nav className="flex items-center justify-between p-6 lg:px-8">
+          {/* Logo */}
           <div className="flex lg:flex-1">
             <a
               href="/"
@@ -37,6 +31,7 @@ export default function Navbar() {
             </a>
           </div>
 
+          {/* Mobile menu button */}
           <div className="flex lg:hidden">
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -46,6 +41,7 @@ export default function Navbar() {
             </button>
           </div>
 
+          {/* Desktop links */}
           <div className="hidden lg:flex lg:gap-x-10">
             {navigation.map((item) => (
               <a
@@ -58,12 +54,13 @@ export default function Navbar() {
             ))}
           </div>
 
+          {/* Desktop CTA */}
           <div className="hidden lg:flex lg:flex-1 lg:justify-end">
             <a
               href="/report"
               className="rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-[#020817] hover:bg-cyan-400 transition-colors"
             >
-              Report pothole
+              Report an issue
             </a>
           </div>
         </nav>
@@ -94,14 +91,23 @@ export default function Navbar() {
                   key={item.name}
                   href={item.href}
                   className="block rounded-lg px-3 py-2 text-base font-semibold hover:bg-white/5"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.name}
                 </a>
               ))}
+
+              {/* Mobile CTA */}
+              <a
+                href="/report"
+                className="mt-4 block rounded-lg bg-cyan-500 px-4 py-2 text-center font-semibold text-[#020817] hover:bg-cyan-400 transition-colors"
+              >
+                Report an issue
+              </a>
             </div>
           </DialogPanel>
         </Dialog>
       </header>
     </div>
-  )
+  );
 }

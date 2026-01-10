@@ -5,6 +5,32 @@ import { useState } from 'react';
 const MAX_SIZE_MB = 10;
 const MAX_GPS_ACCURACY = 200; // meters
 
+const IMPACT_LABELS: Record<
+  string,
+  { value: number; label: string }[]
+> = {
+  pothole: [
+    { value: 1, label: 'Minor surface damage' },
+    { value: 2, label: 'Moderate dip / uneven road' },
+    { value: 3, label: 'Severe / accident‑prone pothole' },
+  ],
+  streetlight: [
+    { value: 1, label: 'Flickering occasionally' },
+    { value: 2, label: 'Often off / unstable' },
+    { value: 3, label: 'Completely not working' },
+  ],
+  traffic_signal: [
+    { value: 1, label: 'Delayed / slow response' },
+    { value: 2, label: 'Stuck on one color' },
+    { value: 3, label: 'Not functioning at all' },
+  ],
+  open_drainage: [
+    { value: 1, label: 'Partially open' },
+    { value: 2, label: 'Fully open' },
+    { value: 3, label: 'Deep / hazardous' },
+  ],
+};
+
 export default function ReportPotholePage() {
   const [image, setImage] = useState<File | null>(null);
 
@@ -18,11 +44,11 @@ export default function ReportPotholePage() {
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [accuracy, setAccuracy] = useState<number | null>(null);
-
-  const [severity, setSeverity] = useState(3);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [issueType, setIssueType] = useState('pothole');
+  const [impactLevel, setImpactLevel] = useState(2);
 
   const locationResolved = lat !== null && lng !== null;
   const isAccuracyAcceptable =
@@ -71,62 +97,72 @@ export default function ReportPotholePage() {
 
   /* ---------- SUBMIT ---------- */
   const submitReport = async () => {
-    setError('');
+  setError('');
 
-    if (!image || !locationResolved) {
-      setError('Please upload an image and detect location');
-      return;
-    }
+  if (!image) {
+    setError('Please upload an image of the issue');
+    return;
+  }
 
-    if (!isAccuracyAcceptable) {
-      setError(
-        'Location accuracy is too low. Please retry from an open area.'
-      );
-      return;
-    }
+  if (!locationResolved) {
+    setError('Please detect your location using GPS');
+    return;
+  }
 
-    if (image.size > MAX_SIZE_MB * 1024 * 1024) {
-      setError('Please upload an image smaller than 10MB');
-      return;
-    }
+  if (!isAccuracyAcceptable) {
+    setError(
+      'Location accuracy is too low. Please retry from an open area.'
+    );
+    return;
+  }
 
-    setLoading(true);
-    setSuccess(false);
+  if (image.size > MAX_SIZE_MB * 1024 * 1024) {
+    setError('Please upload an image smaller than 10MB');
+    return;
+  }
 
-    const finalLocation = landmark.trim()
-      ? `(${landmark.trim()}) ${autoLocation}`
-      : autoLocation;
+  setLoading(true);
+  setSuccess(false);
 
-    const formData = new FormData();
-    formData.append('image', image);
-    formData.append('location', finalLocation);
-    formData.append('lat', String(lat));
-    formData.append('lng', String(lng));
-    formData.append('severity', String(severity));
+  const finalLocation = landmark.trim()
+    ? `(${landmark.trim()}) ${autoLocation}`
+    : autoLocation;
 
-    const res = await fetch('/api/report/create', {
-      method: 'POST',
-      body: formData,
-    });
+  const formData = new FormData();
+  formData.append('image', image);
+  formData.append('location', finalLocation);
+  formData.append('lat', String(lat));
+  formData.append('lng', String(lng));
 
-    const data = await res.json();
-    setLoading(false);
+  // ✅ NEW FIELDS (as per final schema)
+  formData.append('type', issueType); // pothole / streetlight / traffic_signal / open_drainage
+  formData.append('impact_level', String(impactLevel)); // 1 / 2 / 3
 
-    if (!res.ok) {
-      setError(data.error || 'Something went wrong');
-      return;
-    }
+  const res = await fetch('/api/report/create', {
+    method: 'POST',
+    body: formData,
+  });
 
-    // Reset
-    setImage(null);
-    setLandmark('');
-    setLat(null);
-    setLng(null);
-    setAccuracy(null);
-    setAutoLocation('Not detected yet');
-    setSeverity(3);
-    setSuccess(true);
-  };
+  const data = await res.json();
+  setLoading(false);
+
+  if (!res.ok) {
+    setError(data.error || 'Something went wrong');
+    return;
+  }
+
+  // Reset
+  setImage(null);
+  setLandmark('');
+  setLat(null);
+  setLng(null);
+  setAccuracy(null);
+  setAutoLocation('Not detected yet');
+  setImpactLevel(3);
+  setIssueType('pothole');
+  setSuccess(true);
+};
+
 
   return (
     <div className="min-h-screen bg-[#020817] text-white px-6 py-20">
@@ -231,7 +267,7 @@ export default function ReportPotholePage() {
         )}
 
         {/* Severity */}
-        <label className="block mb-6">
+        {/* <label className="block mb-6">
           <span className="text-sm text-gray-300">Severity</span>
           <select
             value={severity}
@@ -243,6 +279,40 @@ export default function ReportPotholePage() {
             <option value={3}>3 – Medium</option>
             <option value={4}>4 – High</option>
             <option value={5}>5 – Critical</option>
+          </select>
+        </label> */}
+
+                {/* ISSUE TYPE */}
+        <label className="block mb-4">
+          <span className="text-sm text-gray-300">Issue Type</span>
+          <select
+            value={issueType}
+            onChange={(e) => {
+              setIssueType(e.target.value);
+              setImpactLevel(3); // reset on change
+            }}
+            className="mt-2 w-full bg-[#020817] border border-slate-600 p-2 rounded"
+          >
+            <option value="pothole">Pothole</option>
+            <option value="streetlight">Streetlight</option>
+            <option value="traffic_signal">Traffic Signal</option>
+            <option value="open_drainage">Open Drainage</option>
+          </select>
+        </label>
+
+        {/* IMPACT LEVEL (DYNAMIC) */}
+        <label className="block mb-6">
+          <span className="text-sm text-gray-300">Impact Level</span>
+          <select
+            value={impactLevel}
+            onChange={(e) => setImpactLevel(Number(e.target.value))}
+            className="mt-2 w-full bg-[#020817] border border-slate-600 p-2 rounded"
+          >
+            {IMPACT_LABELS[issueType].map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.value} – {opt.label}
+              </option>
+            ))}
           </select>
         </label>
 

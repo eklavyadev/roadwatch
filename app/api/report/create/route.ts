@@ -19,22 +19,34 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
 
+    /* ---------- EXTRACT FIELDS ---------- */
     const image = formData.get('image') as File | null;
     const location = formData.get('location') as string | null;
+
     const lat = Number(formData.get('lat'));
     const lng = Number(formData.get('lng'));
-    const severity = Number(formData.get('severity'));
 
-    /* ---------- VALIDATION ---------- */
+    const type = formData.get('type') as string | null;
+    const impactLevel = Number(formData.get('impact_level'));
+
+    /* ---------- BASIC VALIDATION ---------- */
     if (
       !image ||
       !location ||
+      !type ||
       Number.isNaN(lat) ||
       Number.isNaN(lng) ||
-      Number.isNaN(severity)
+      Number.isNaN(impactLevel)
     ) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing or invalid required fields' },
+        { status: 400 }
+      );
+    }
+
+    if (![1, 2, 3].includes(impactLevel)) {
+      return NextResponse.json(
+        { error: 'Invalid impact level' },
         { status: 400 }
       );
     }
@@ -47,7 +59,7 @@ export async function POST(req: Request) {
       );
     }
 
-    /* ---------- 🔁 DUPLICATE CHECK (200m RADIUS) ---------- */
+    /* ---------- DUPLICATE CHECK (200m) ---------- */
     const { data: nearbyReports, error: duplicateError } =
       await supabase.rpc('check_nearby_reports', {
         input_lat: lat,
@@ -58,7 +70,7 @@ export async function POST(req: Request) {
     if (duplicateError) {
       console.error('DUPLICATE CHECK ERROR:', duplicateError);
       return NextResponse.json(
-        { error: 'Failed to check nearby reports' },
+        { error: 'Failed to validate nearby reports' },
         { status: 500 }
       );
     }
@@ -67,13 +79,13 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            'A pothole has already been reported nearby and is published or under review. Please check the homepage/map for existing reports.',
+            'A similar issue has already been reported nearby. Please check the map for existing reports.',
         },
-        { status: 409 } // Conflict
+        { status: 409 }
       );
     }
 
-    /* ---------- UPLOAD IMAGE ---------- */
+    /* ---------- IMAGE UPLOAD ---------- */
     const fileName = generateSafeFileName(image);
 
     const { error: uploadError } = await supabase.storage
@@ -102,7 +114,8 @@ export async function POST(req: Request) {
         location,
         lat,
         lng,
-        severity,
+        type,                // ✅ NEW
+        impact_level: impactLevel, // ✅ NEW
         status: 'pending',
         governing_body: 'Municipal',
       })
@@ -117,19 +130,21 @@ export async function POST(req: Request) {
       );
     }
 
-    /* ---------- 🔥 TRIGGER AI (ASYNC) ---------- */
+    /* ---------- 🔥 AI TRIGGER (NON-BLOCKING) ---------- */
     fetch('https://roadwatch-ai.onrender.com/check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         reportId: inserted.id,
         imageUrl: publicUrlData.publicUrl,
+        type,
+        impact_level: impactLevel,
       }),
     }).catch((err) => {
       console.error('AI TRIGGER FAILED:', err);
     });
 
-    /* ---------- RESPONSE ---------- */
+    /* ---------- FINAL RESPONSE ---------- */
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('SERVER ERROR:', err);

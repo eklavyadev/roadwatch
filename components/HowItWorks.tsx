@@ -10,33 +10,33 @@ import {
 
 const steps = [
   {
-    title: 'Capture the Pothole',
+    title: 'Capture the Issue',
     description:
-      'Citizens capture a photo of the pothole using their device camera and add a brief location description.',
+      'Citizens capture a photo of a civic issue such as a pothole, broken streetlight, traffic signal problem, or open drainage, along with a brief location reference.',
     icon: CameraIcon,
   },
   {
     title: 'Auto Location Tagging',
     description:
-      'The system automatically records precise GPS coordinates to ensure accurate positioning on the map.',
+      'The system automatically records precise GPS coordinates to accurately place the issue on the city map.',
     icon: MapPinIcon,
   },
   {
     title: 'AI‑Powered Verification',
     description:
-      'An AI moderation service automatically analyzes the image to verify whether it is road‑related and filters spam or invalid reports.',
+      'An AI moderation service analyzes the image and metadata to verify relevance, detect duplicates, and filter spam or invalid reports.',
     icon: CpuChipIcon,
   },
   {
-    title: 'Admin Oversight (Optional)',
+    title: 'Admin Oversight',
     description:
-      'Administrators can review and override AI decisions in edge cases to maintain accuracy and trust.',
+      'Administrators can review flagged or high‑impact reports and override AI decisions when required to ensure accuracy.',
     icon: ShieldCheckIcon,
   },
   {
     title: 'Visible on Public Map',
     description:
-      'Only verified potholes appear on the public map, helping authorities prioritize repairs effectively.',
+      'Only verified civic issues appear on the public map, enabling authorities and citizens to track and prioritize infrastructure problems.',
     icon: GlobeAltIcon,
   },
 ];
@@ -52,8 +52,8 @@ export default function HowItWorks() {
             How Road<span className="text-cyan-400">Watch</span> Works
           </h2>
           <p className="mt-4 text-gray-400">
-            A fast, AI‑driven workflow that converts citizen reports into
-            reliable, actionable road maintenance data.
+            A fast, validation‑first workflow that converts citizen reports
+            into reliable, actionable civic infrastructure data.
           </p>
         </div>
 
@@ -85,8 +85,8 @@ export default function HowItWorks() {
 
         {/* Footer note */}
         <p className="mt-14 text-center text-sm text-gray-500">
-          AI handles verification at scale, while human oversight ensures
-          accountability and reliability.
+          AI enables scalable verification, while human oversight maintains
+          transparency, accountability, and trust.
         </p>
       </div>
     </section>
