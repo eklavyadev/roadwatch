@@ -8,6 +8,7 @@ import {
   useLoadScript,
 } from '@react-google-maps/api';
 
+/* ---------- TYPES ---------- */
 type Report = {
   id: string;
   lat: number;
@@ -41,7 +42,12 @@ const DESCRIPTION: Record<Report['type'], Record<number, string>> = {
   },
 };
 
-export default function ApprovedReportsMap() {
+type ApprovedPotholesMapProps = {
+  focusReport?: any;
+  single?: boolean;
+};
+
+export default function ApprovedPotholesMap({ focusReport, single }: ApprovedPotholesMapProps) {
   const [reports, setReports] = useState<Report[]>([]);
   const [active, setActive] = useState<Report | null>(null);
 
@@ -49,14 +55,22 @@ export default function ApprovedReportsMap() {
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
   });
 
+  /* ---------- FETCH DATA ---------- */
   useEffect(() => {
     fetch('/api/admin/reports')
       .then((res) => res.json())
-      .then((data) =>
-        setReports(data.filter((r: any) => r.status === 'approved'))
-      );
+      .then((data) => {
+        const approved = data.filter(
+          (r: any) => r.status === 'approved'
+        );
+        setReports(approved);
+      })
+      .catch(() => {
+        setReports([]);
+      });
   }, []);
 
+  /* ---------- STATES ---------- */
   if (!isLoaded) {
     return <p className="text-gray-400">Loading map…</p>;
   }
@@ -69,6 +83,7 @@ export default function ApprovedReportsMap() {
     );
   }
 
+  /* ---------- MAP ---------- */
   return (
     <GoogleMap
       mapContainerStyle={{ width: '100%', height: '500px' }}
@@ -91,21 +106,26 @@ export default function ApprovedReportsMap() {
       ))}
 
       {active && (
-  <InfoWindow
-    position={{ lat: active.lat, lng: active.lng }}
-    onCloseClick={() => setActive(null)}
-  >
-    <div style={{ color: '#020817', fontSize: '12px' }}>
-      <p style={{ fontWeight: 600, marginBottom: '4px' }}>
-        {active.location}
-      </p>
-      <p>
-        {DESCRIPTION[active.type]?.[Number(active.impact_level)]}
-      </p>
-    </div>
-  </InfoWindow>
-)}
-
+        <InfoWindow
+          position={{ lat: active.lat, lng: active.lng }}
+          onCloseClick={() => setActive(null)}
+        >
+          <div
+            style={{
+              color: '#020817', // readable on default white InfoWindow
+              fontSize: '12px',
+              maxWidth: '220px',
+            }}
+          >
+            <p style={{ fontWeight: 600, marginBottom: '4px' }}>
+              {active.location}
+            </p>
+            <p>
+              {DESCRIPTION[active.type]?.[active.impact_level]}
+            </p>
+          </div>
+        </InfoWindow>
+      )}
     </GoogleMap>
   );
 }
