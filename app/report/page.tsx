@@ -1,8 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import imageCompression from 'browser-image-compression';
 
-const MAX_SIZE_MB = 10;
+async function compressImage(file: File) {
+  return await imageCompression(file, {
+    maxSizeMB: 0.8,          // < 1MB
+    maxWidthOrHeight: 1280,
+    useWebWorker: true,
+    initialQuality: 0.7,
+    fileType: 'image/jpeg',
+  });
+}
+
+
+const MAX_SIZE_MB = 1.5;
 const MAX_GPS_ACCURACY = 200; // meters
 
 const IMPACT_LABELS: Record<
@@ -190,7 +202,14 @@ export default function ReportPotholePage() {
             type="file"
             accept="image/*"
             capture="environment"
-            onChange={(e) => setImage(e.target.files?.[0] || null)}
+            onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                const compressed = await compressImage(file);
+                setImage(compressed);
+              }}
+
             className="mt-2 block w-full text-sm"
           />
         </label>
