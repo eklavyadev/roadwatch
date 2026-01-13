@@ -5,7 +5,7 @@ import imageCompression from 'browser-image-compression';
 
 async function compressImage(file: File) {
   return await imageCompression(file, {
-    maxSizeMB: 0.8,          // < 1MB
+    maxSizeMB: 1,          // < 1MB
     maxWidthOrHeight: 1280,
     useWebWorker: true,
     initialQuality: 0.7,
@@ -14,7 +14,7 @@ async function compressImage(file: File) {
 }
 
 
-const MAX_SIZE_MB = 1.5;
+const MAX_SIZE_MB = 10;
 const MAX_GPS_ACCURACY = 200; // meters
 
 const IMPACT_LABELS: Record<
