@@ -226,7 +226,7 @@ export default function ReportPotholePage() {
 
         {success && (
           <div className="mb-4 rounded bg-green-600/20 border border-green-600 p-3 text-sm text-green-400">
-            ✅ Pothole reported successfully.
+            ✅ Issue reported successfully.
           </div>
         )}
 
