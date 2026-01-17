@@ -222,7 +222,7 @@ export default function ReportPotholePage() {
   return (
     <div className="min-h-screen bg-[#020817] text-white px-6 py-20">
       <div className="mx-auto max-w-xl bg-[#0f172a] p-6 rounded border border-slate-700">
-        <h1 className="text-2xl font-bold mb-6">Report a Pothole</h1>
+        <h1 className="text-2xl font-bold mb-6">Report an Issue</h1>
 
         {success && (
           <div className="mb-4 rounded bg-green-600/20 border border-green-600 p-3 text-sm text-green-400">
