@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import imageCompression from 'browser-image-compression';
 
 async function compressImage(file: File) {
@@ -43,7 +43,16 @@ const IMPACT_LABELS: Record<
   ],
 };
 
+
+
+
 export default function ReportPotholePage() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+      setIsMounted(true);
+    }, []);
+
   const [image, setImage] = useState<File | null>(null);
 
   // System-detected (read-only)
@@ -106,6 +115,27 @@ export default function ReportPotholePage() {
       { enableHighAccuracy: true }
     );
   };
+
+
+  /* -----------BLOCK PC--------------- */
+  const isMobileDevice = () => {
+  if (!isMounted) return false;
+
+  const ua = navigator.userAgent.toLowerCase();
+
+  const isMobileUA =
+    ua.includes('android') ||
+    ua.includes('iphone') ||
+    ua.includes('ipad');
+
+  const hasTouch = navigator.maxTouchPoints > 0;
+  const hasOrientation =
+    typeof window !== 'undefined' &&
+    'DeviceOrientationEvent' in window;
+
+  return isMobileUA && hasTouch && hasOrientation;
+};
+
 
   /* ---------- SUBMIT ---------- */
   const submitReport = async () => {
@@ -175,6 +205,19 @@ export default function ReportPotholePage() {
   setSuccess(true);
 };
 
+  if (!isMobileDevice()) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#020817] text-white p-6">
+      <div className="max-w-md text-center border border-slate-700 p-6 rounded bg-[#0f172a]">
+        <h2 className="text-xl font-bold mb-3">Mobile Only</h2>
+        <p className="text-gray-400 text-sm">
+          Reporting is allowed only from mobile phones using live camera capture
+          to ensure on‑site and authentic reporting.
+        </p>
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen bg-[#020817] text-white px-6 py-20">

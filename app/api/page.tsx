@@ -113,6 +113,58 @@ export default function ApiDocsPage() {
             </div>
           </section>
 
+          <section className="bg-[#0f172a] border border-slate-700 rounded p-6">
+  <h2 className="text-xl font-semibold mb-4">
+    Impact Level Semantics
+  </h2>
+
+  <p className="text-sm text-gray-400 mb-4">
+    The meaning of <code className="text-white">impact_level</code> depends on the issue type.
+    API consumers should interpret severity using the mappings below.
+  </p>
+
+  <div className="space-y-4 text-sm text-gray-300">
+
+    <div>
+      <p className="text-white font-medium">Pothole</p>
+      <ul className="list-disc list-inside ml-4">
+        <li>1 – Minor surface damage</li>
+        <li>2 – Moderate dip / uneven road</li>
+        <li>3 – Severe / accident‑prone pothole</li>
+      </ul>
+    </div>
+
+    <div>
+      <p className="text-white font-medium">Streetlight</p>
+      <ul className="list-disc list-inside ml-4">
+        <li>1 – Flickering occasionally</li>
+        <li>2 – Often off or unstable</li>
+        <li>3 – Completely not working</li>
+      </ul>
+    </div>
+
+    <div>
+      <p className="text-white font-medium">Traffic Signal</p>
+      <ul className="list-disc list-inside ml-4">
+        <li>1 – Delayed or slow response</li>
+        <li>2 – Stuck on one color</li>
+        <li>3 – Not functioning at all</li>
+      </ul>
+    </div>
+
+    <div>
+      <p className="text-white font-medium">Open Drainage</p>
+      <ul className="list-disc list-inside ml-4">
+        <li>1 – Partially open</li>
+        <li>2 – Fully open</li>
+        <li>3 – Deep or hazardous</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+
           {/* Usage */}
           <section className="bg-[#0f172a] border border-slate-700 rounded p-6">
             <h2 className="text-xl font-semibold mb-3">Recommended Usage</h2>
