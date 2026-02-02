@@ -7,7 +7,7 @@ const supabase = createClient(
 );
 
 const MAX_SIZE_MB = 10;
-const DUPLICATE_RADIUS_METERS = 200;
+const DUPLICATE_RADIUS_METERS = 50;
 
 /* ---------- SAFE FILE NAME ---------- */
 function generateSafeFileName(file: File) {
