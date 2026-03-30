@@ -9,9 +9,9 @@ export default function Hero() {
       <main className="relative flex min-h-screen items-center px-6 pt-32 lg:px-8 lg:pt-0">
         <div className="mx-auto max-w-3xl text-center lg:-mt-16">
           <h1 className="text-4xl sm:text-6xl font-semibold tracking-tight">
-            Making roads{' '}
-            <span className="text-cyan-400 animate-pulse">safer</span>{' '}
-            with data
+            Making Roads{' '}
+            <span className="text-cyan-400 animate-pulse">Safer</span>{' '}
+            With Data
           </h1>
 
           <p className="mt-6 text-lg text-gray-400 leading-relaxed">
