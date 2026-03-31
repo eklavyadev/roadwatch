@@ -70,7 +70,6 @@ export default function ReportPage() {
   const locationResolved = lat !== null && lng !== null;
   const isAccuracyAcceptable = accuracy !== null && accuracy <= MAX_GPS_ACCURACY;
 
-  /* ---------- GET LOCATION ---------- */
   const getLocation = () => {
     setError('');
     setLocLoading(true);
@@ -85,12 +84,10 @@ export default function ReportPage() {
       async (pos) => {
         const latitude = pos.coords.latitude;
         const longitude = pos.coords.longitude;
-
         setLat(latitude);
         setLng(longitude);
         setAccuracy(Math.round(pos.coords.accuracy));
         setLocLoading(false);
-
         try {
           const res = await fetch(
             `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
@@ -113,10 +110,8 @@ export default function ReportPage() {
     );
   };
 
-  /* ---------- SUBMIT ---------- */
   const submitReport = async () => {
     setError('');
-
     if (!image) { setError('Please upload an image of the issue'); return; }
     if (!locationResolved) { setError('Please detect your location using GPS'); return; }
     if (!isAccuracyAcceptable) { setError('Location accuracy is too low. Please retry from an open area.'); return; }
@@ -154,12 +149,12 @@ export default function ReportPage() {
     setSuccess(true);
   };
 
-  /* ---------- SUCCESS STATE ---------- */
+  /* SUCCESS STATE */
   if (success) {
     return (
-      <div className="min-h-screen bg-[#020817] flex items-center justify-center px-6">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#020817] flex items-center justify-center px-6">
         <div
-          className="absolute inset-0 opacity-[0.1]"
+          className="absolute inset-0 opacity-[0.1] dark:opacity-[0.08] pointer-events-none"
           style={{
             backgroundImage: `radial-gradient(circle at 1px 1px, rgb(148 163 184 / 0.4) 1px, transparent 0)`,
             backgroundSize: '36px 36px',
@@ -167,22 +162,22 @@ export default function ReportPage() {
         />
         <div className="relative text-center max-w-sm w-full">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15 border border-emerald-500/25 mb-6">
-            <CheckCircleIcon className="h-8 w-8 text-emerald-400" />
+            <CheckCircleIcon className="h-8 w-8 text-emerald-500 dark:text-emerald-400" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Report submitted</h2>
-          <p className="text-gray-400 text-sm mb-8">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Report submitted</h2>
+          <p className="text-slate-500 dark:text-gray-400 text-sm mb-8">
             Your report has been submitted and is pending automated verification. Only verified issues appear on the public map.
           </p>
           <div className="flex gap-3">
             <button
               onClick={() => setSuccess(false)}
-              className="flex-1 rounded-lg border border-slate-700 text-gray-300 hover:text-white py-2.5 text-sm font-medium transition-all"
+              className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-slate-500 py-2.5 text-sm font-medium transition-all"
             >
               Submit another
             </button>
             <a
               href="/"
-              className="flex-1 rounded-lg bg-cyan-500 text-[#020817] py-2.5 text-sm font-semibold text-center hover:bg-cyan-400 transition-all"
+              className="flex-1 rounded-lg bg-cyan-500 text-white dark:text-[#020817] py-2.5 text-sm font-semibold text-center hover:bg-cyan-400 transition-all"
             >
               Back to home
             </a>
@@ -192,12 +187,11 @@ export default function ReportPage() {
     );
   }
 
-  /* ---------- FORM ---------- */
   return (
-    <div className="min-h-screen bg-[#020817] text-white px-6 py-16 pt-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#020817] text-slate-900 dark:text-white px-6 py-16 pt-24">
       {/* Dot grid */}
       <div
-        className="fixed inset-0 opacity-[0.08] pointer-events-none"
+        className="fixed inset-0 opacity-[0.1] dark:opacity-[0.08] pointer-events-none"
         style={{
           backgroundImage: `radial-gradient(circle at 1px 1px, rgb(148 163 184 / 0.4) 1px, transparent 0)`,
           backgroundSize: '36px 36px',
@@ -205,34 +199,31 @@ export default function ReportPage() {
       />
 
       <div className="relative mx-auto max-w-lg">
-        {/* Back link */}
-        <a href="/" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-white transition-colors mb-8">
+        <a href="/" className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-gray-500 hover:text-slate-900 dark:hover:text-white transition-colors mb-8">
           ← Back to home
         </a>
 
-        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white">Report an Issue</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Report an Issue</h1>
+          <p className="text-sm text-slate-500 dark:text-gray-500 mt-1">
             Submit a civic infrastructure problem in your area
           </p>
         </div>
 
-        {/* Error */}
         {error && (
-          <div className="mb-6 flex items-start gap-3 rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-400">
+          <div className="mb-6 flex items-start gap-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-4 text-sm text-red-600 dark:text-red-400">
             <ExclamationTriangleIcon className="h-4 w-4 shrink-0 mt-0.5" />
             {error}
           </div>
         )}
 
-        <div className="space-y-6">
-          {/* ── Photo ── */}
-          <div className="bg-[#0c1525] border border-slate-800 rounded-xl p-5">
+        <div className="space-y-4">
+          {/* Photo */}
+          <div className="bg-white dark:bg-[#0c1525] border border-slate-200 dark:border-slate-800 rounded-xl p-5">
             <div className="flex items-center gap-2 mb-4">
-              <CameraIcon className="h-4 w-4 text-cyan-400" />
-              <p className="text-sm font-medium text-white">Photo</p>
-              <span className="text-xs text-gray-600">required</span>
+              <CameraIcon className="h-4 w-4 text-cyan-500 dark:text-cyan-400" />
+              <p className="text-sm font-medium text-slate-900 dark:text-white">Photo</p>
+              <span className="text-xs text-slate-400 dark:text-gray-600">required</span>
             </div>
 
             {image ? (
@@ -240,25 +231,25 @@ export default function ReportPage() {
                 <img
                   src={URL.createObjectURL(image)}
                   alt="preview"
-                  className="w-full h-48 object-cover rounded-lg border border-slate-700"
+                  className="w-full h-48 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
                 />
                 <button
                   onClick={() => setImage(null)}
-                  className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/70 text-white text-xs hover:bg-black transition-colors flex items-center justify-center"
+                  className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 text-white text-xs hover:bg-black transition-colors flex items-center justify-center"
                 >
                   ✕
                 </button>
               </div>
             ) : (
-              <label className="flex flex-col items-center gap-3 cursor-pointer rounded-xl border-2 border-dashed border-slate-700 hover:border-cyan-500/40 bg-[#020817]/50 py-10 px-4 transition-all group">
-                <div className="h-10 w-10 rounded-full bg-slate-800 group-hover:bg-cyan-500/10 flex items-center justify-center transition-colors">
-                  <ArrowUpTrayIcon className="h-5 w-5 text-gray-500 group-hover:text-cyan-400 transition-colors" />
+              <label className="flex flex-col items-center gap-3 cursor-pointer rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-cyan-400 dark:hover:border-cyan-500/40 bg-slate-50 dark:bg-[#020817]/50 py-10 px-4 transition-all group">
+                <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-cyan-500/10 flex items-center justify-center transition-colors">
+                  <ArrowUpTrayIcon className="h-5 w-5 text-slate-400 dark:text-gray-500 group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-gray-400 group-hover:text-white transition-colors">
+                  <p className="text-sm text-slate-500 dark:text-gray-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                     Tap to capture or upload
                   </p>
-                  <p className="text-xs text-gray-600 mt-0.5">Max 10MB · JPEG, PNG</p>
+                  <p className="text-xs text-slate-400 dark:text-gray-600 mt-0.5">Max 10MB · JPEG, PNG</p>
                 </div>
                 <input
                   type="file"
@@ -276,9 +267,9 @@ export default function ReportPage() {
             )}
           </div>
 
-          {/* ── Issue Type ── */}
-          <div className="bg-[#0c1525] border border-slate-800 rounded-xl p-5">
-            <p className="text-sm font-medium text-white mb-4">Issue Type</p>
+          {/* Issue Type */}
+          <div className="bg-white dark:bg-[#0c1525] border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+            <p className="text-sm font-medium text-slate-900 dark:text-white mb-4">Issue Type</p>
             <div className="grid grid-cols-2 gap-2.5">
               {ISSUE_TYPES.map((type) => (
                 <button
@@ -286,8 +277,8 @@ export default function ReportPage() {
                   onClick={() => { setIssueType(type.value); setImpactLevel(2); }}
                   className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${
                     issueType === type.value
-                      ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-300'
-                      : 'border-slate-700 bg-[#020817]/50 text-gray-400 hover:border-slate-600 hover:text-white'
+                      ? 'border-cyan-500/50 bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-300'
+                      : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#020817]/50 text-slate-600 dark:text-gray-400 hover:border-slate-400 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <span className="text-base">{type.icon}</span>
@@ -297,9 +288,9 @@ export default function ReportPage() {
             </div>
           </div>
 
-          {/* ── Impact Level ── */}
-          <div className="bg-[#0c1525] border border-slate-800 rounded-xl p-5">
-            <p className="text-sm font-medium text-white mb-4">Impact Level</p>
+          {/* Impact Level */}
+          <div className="bg-white dark:bg-[#0c1525] border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+            <p className="text-sm font-medium text-slate-900 dark:text-white mb-4">Impact Level</p>
             <div className="space-y-2">
               {IMPACT_LABELS[issueType].map((opt) => (
                 <button
@@ -308,18 +299,18 @@ export default function ReportPage() {
                   className={`w-full flex items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-all ${
                     impactLevel === opt.value
                       ? opt.value === 1
-                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                        ? 'border-emerald-400/40 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
                         : opt.value === 2
-                        ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
-                        : 'border-red-500/40 bg-red-500/10 text-red-300'
-                      : 'border-slate-700 bg-[#020817]/50 text-gray-400 hover:border-slate-600 hover:text-white'
+                        ? 'border-amber-400/40 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                        : 'border-red-400/40 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300'
+                      : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#020817]/50 text-slate-600 dark:text-gray-400 hover:border-slate-400 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <span>{opt.label}</span>
                   <span className={`text-xs font-semibold ${
                     impactLevel === opt.value
-                      ? opt.value === 1 ? 'text-emerald-400' : opt.value === 2 ? 'text-amber-400' : 'text-red-400'
-                      : 'text-gray-600'
+                      ? opt.value === 1 ? 'text-emerald-600 dark:text-emerald-400' : opt.value === 2 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'
+                      : 'text-slate-400 dark:text-gray-600'
                   }`}>
                     {opt.value === 1 ? 'Low' : opt.value === 2 ? 'Medium' : 'High'}
                   </span>
@@ -328,61 +319,58 @@ export default function ReportPage() {
             </div>
           </div>
 
-          {/* ── Location ── */}
-          <div className="bg-[#0c1525] border border-slate-800 rounded-xl p-5">
+          {/* Location */}
+          <div className="bg-white dark:bg-[#0c1525] border border-slate-200 dark:border-slate-800 rounded-xl p-5">
             <div className="flex items-center gap-2 mb-4">
-              <MapPinIcon className="h-4 w-4 text-cyan-400" />
-              <p className="text-sm font-medium text-white">Location</p>
-              <span className="text-xs text-gray-600">required</span>
+              <MapPinIcon className="h-4 w-4 text-cyan-500 dark:text-cyan-400" />
+              <p className="text-sm font-medium text-slate-900 dark:text-white">Location</p>
+              <span className="text-xs text-slate-400 dark:text-gray-600">required</span>
             </div>
 
-            {/* Landmark */}
             <div className="mb-4">
-              <label className="text-xs text-gray-500 mb-1.5 block">Nearest landmark (optional)</label>
+              <label className="text-xs text-slate-500 dark:text-gray-500 mb-1.5 block">Nearest landmark (optional)</label>
               <input
                 type="text"
                 placeholder="e.g. Near bus stop, opposite school"
                 value={landmark}
                 onChange={(e) => setLandmark(e.target.value)}
-                className="w-full rounded-lg bg-[#020817] border border-slate-700 text-white placeholder-gray-600 px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                className="w-full rounded-lg bg-slate-50 dark:bg-[#020817] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-400 dark:focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-400/20 dark:focus:ring-cyan-500/20 transition-all"
               />
             </div>
 
-            {/* Auto location */}
             <div className="mb-4">
-              <label className="text-xs text-gray-500 mb-1.5 block">Auto-detected address</label>
+              <label className="text-xs text-slate-500 dark:text-gray-500 mb-1.5 block">Auto-detected address</label>
               <input
                 type="text"
                 value={autoLocation}
                 disabled
-                className="w-full rounded-lg bg-[#020817]/60 border border-slate-800 text-gray-400 px-4 py-2.5 text-sm cursor-not-allowed"
+                className="w-full rounded-lg bg-slate-100 dark:bg-[#020817]/60 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-gray-400 px-4 py-2.5 text-sm cursor-not-allowed"
               />
             </div>
 
-            {/* Detect button or status */}
             {!locationResolved ? (
               <button
                 onClick={getLocation}
                 disabled={locLoading}
-                className="flex items-center justify-center gap-2 w-full rounded-lg bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 hover:bg-cyan-500/20 py-2.5 text-sm font-medium transition-all disabled:opacity-50"
+                className="flex items-center justify-center gap-2 w-full rounded-lg bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/25 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-100 dark:hover:bg-cyan-500/20 py-2.5 text-sm font-medium transition-all disabled:opacity-50"
               >
                 <MapPinIcon className="h-4 w-4" />
                 {locLoading ? 'Detecting…' : 'Detect my location'}
               </button>
             ) : (
-              <div className="rounded-lg bg-emerald-500/8 border border-emerald-500/20 p-3 space-y-1.5">
-                <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+              <div className="rounded-lg bg-emerald-50 dark:bg-emerald-500/8 border border-emerald-200 dark:border-emerald-500/20 p-3 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-medium">
                   <CheckCircleIcon className="h-4 w-4" />
                   Location detected
                 </div>
-                <p className="text-xs text-gray-500 font-mono">
+                <p className="text-xs text-slate-500 dark:text-gray-500 font-mono">
                   {lat!.toFixed(5)}, {lng!.toFixed(5)}
                 </p>
                 {accuracy !== null && (
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-slate-500 dark:text-gray-600">
                     GPS accuracy: ±{accuracy}m
                     {!isAccuracyAcceptable && (
-                      <span className="text-red-400 ml-1">
+                      <span className="text-red-500 dark:text-red-400 ml-1">
                         — too low, move to an open area
                       </span>
                     )}
@@ -392,16 +380,16 @@ export default function ReportPage() {
             )}
           </div>
 
-          {/* ── Submit ── */}
+          {/* Submit */}
           <button
             onClick={submitReport}
             disabled={loading || !locationResolved || !isAccuracyAcceptable || !image}
-            className="w-full rounded-xl bg-cyan-500 text-[#020817] py-3.5 text-sm font-semibold hover:bg-cyan-400 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all shadow-lg shadow-cyan-500/20"
+            className="w-full rounded-xl bg-cyan-500 text-white dark:text-[#020817] py-3.5 text-sm font-semibold hover:bg-cyan-400 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all shadow-lg shadow-cyan-500/20"
           >
             {loading ? 'Submitting…' : 'Submit Report'}
           </button>
 
-          <p className="text-xs text-gray-600 text-center pb-4">
+          <p className="text-xs text-slate-400 dark:text-gray-600 text-center pb-4">
             Reports are published after automated verification. Accurate GPS improves data quality for everyone.
           </p>
         </div>

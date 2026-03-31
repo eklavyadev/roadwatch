@@ -35,9 +35,9 @@ const IMPACT_LABEL: Record<number, string> = {
 };
 
 const IMPACT_BADGE_CLASS: Record<number, string> = {
-  1: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
-  2: 'bg-amber-500/15 text-amber-400 border border-amber-500/25',
-  3: 'bg-red-500/15 text-red-400 border border-red-500/25',
+  1: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25',
+  2: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25',
+  3: 'bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/25',
 };
 
 const TYPE_LABEL: Record<Report['type'], string> = {
@@ -104,13 +104,13 @@ export function ApprovedReports() {
         {[...Array(3)].map((_, i) => (
           <div
             key={i}
-            className="bg-[#0c1525] border border-slate-800 rounded-xl overflow-hidden animate-pulse"
+            className="bg-white dark:bg-[#0c1525] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden animate-pulse"
           >
-            <div className="h-48 bg-slate-800" />
+            <div className="h-48 bg-slate-100 dark:bg-slate-800" />
             <div className="p-4 space-y-3">
-              <div className="h-4 bg-slate-800 rounded w-3/4" />
-              <div className="h-3 bg-slate-800 rounded w-1/2" />
-              <div className="h-3 bg-slate-800 rounded w-2/3" />
+              <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-3/4" />
+              <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded w-1/2" />
+              <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded w-2/3" />
             </div>
           </div>
         ))}
@@ -120,8 +120,8 @@ export function ApprovedReports() {
 
   if (reports.length === 0) {
     return (
-      <div className="border border-dashed border-slate-800 rounded-xl p-16 text-center">
-        <p className="text-gray-500 text-sm">No verified reports yet.</p>
+      <div className="border border-dashed border-slate-300 dark:border-slate-800 rounded-xl p-16 text-center">
+        <p className="text-slate-500 dark:text-gray-500 text-sm">No verified reports yet.</p>
       </div>
     );
   }
@@ -134,7 +134,7 @@ export function ApprovedReports() {
   return (
     <>
       <div className="space-y-8">
-        {/* Cards grid */}
+        {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {visibleReports.map((r) => {
             const level = Number(r.impact_level);
@@ -142,23 +142,21 @@ export function ApprovedReports() {
               <div
                 key={r.id}
                 onClick={() => setSelectedReport(r)}
-                className="group cursor-pointer bg-[#0c1525] border border-slate-800 rounded-xl overflow-hidden hover:border-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/5 transition-all duration-300"
+                className="group cursor-pointer bg-white dark:bg-[#0c1525] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden hover:border-cyan-400/50 dark:hover:border-cyan-500/30 hover:shadow-lg dark:hover:shadow-xl dark:hover:shadow-cyan-500/5 transition-all duration-300"
               >
                 {/* Image */}
-                <div className="relative bg-slate-900 overflow-hidden">
+                <div className="relative bg-slate-100 dark:bg-slate-900 overflow-hidden">
                   <img
                     src={r.image_url}
                     alt={r.type}
                     className="h-48 w-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  {/* Type badge overlaid on image */}
                   <div className="absolute top-3 left-3">
                     <span className="inline-flex items-center gap-1.5 rounded-md bg-black/60 backdrop-blur-sm px-2.5 py-1 text-xs font-medium text-white border border-white/10">
                       <span>{TYPE_ICON[r.type]}</span>
                       {TYPE_LABEL[r.type]}
                     </span>
                   </div>
-                  {/* Impact badge */}
                   <div className="absolute top-3 right-3">
                     <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold ${IMPACT_BADGE_CLASS[level]}`}>
                       {IMPACT_LABEL[level]}
@@ -168,20 +166,18 @@ export function ApprovedReports() {
 
                 {/* Content */}
                 <div className="p-4 space-y-2.5">
-                  <p className="text-white font-medium text-sm leading-snug line-clamp-2">
+                  <p className="text-slate-900 dark:text-white font-medium text-sm leading-snug line-clamp-2">
                     {r.location}
                   </p>
-
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-slate-500 dark:text-gray-500">
                     {IMPACT_DESCRIPTION[r.type][level]}
                   </p>
-
                   <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-gray-600">
                       <MapPinIcon className="h-3.5 w-3.5" />
                       <span>{r.lat.toFixed(4)}, {r.lng.toFixed(4)}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-gray-600">
                       <CalendarDaysIcon className="h-3.5 w-3.5" />
                       <span>{new Date(r.created_at).toLocaleDateString()}</span>
                     </div>
@@ -198,17 +194,17 @@ export function ApprovedReports() {
             <button
               onClick={() => setPage((p) => Math.max(p - 1, 0))}
               disabled={page === 0}
-              className="px-4 py-2 rounded-lg bg-[#0c1525] border border-slate-800 text-sm text-gray-400 hover:text-white hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className="px-4 py-2 rounded-lg bg-white dark:bg-[#0c1525] border border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               ← Previous
             </button>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-slate-500 dark:text-gray-500">
               Page {page + 1} of {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(p + 1, totalPages - 1))}
               disabled={page === totalPages - 1}
-              className="px-4 py-2 rounded-lg bg-[#0c1525] border border-slate-800 text-sm text-gray-400 hover:text-white hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className="px-4 py-2 rounded-lg bg-white dark:bg-[#0c1525] border border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               Next →
             </button>
@@ -219,17 +215,17 @@ export function ApprovedReports() {
       {/* MODAL */}
       {selectedReport && (
         <div
-          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/60 dark:bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setSelectedReport(null)}
         >
           <div
-            className="relative bg-[#0c1525] border border-slate-700/50 rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl"
+            className="relative bg-white dark:bg-[#0c1525] border border-slate-200 dark:border-slate-700/50 rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close */}
             <button
               onClick={() => setSelectedReport(null)}
-              className="absolute top-4 right-4 z-10 h-9 w-9 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-gray-400 hover:text-white transition-colors"
+              className="absolute top-4 right-4 z-10 h-9 w-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-black/50 backdrop-blur-sm border border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-colors"
             >
               <XMarkIcon className="h-4 w-4" />
             </button>
@@ -243,9 +239,8 @@ export function ApprovedReports() {
                   className="rounded-xl w-full h-60 object-cover"
                 />
 
-                {/* Type + Impact row */}
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-white/5 border border-white/10 px-2.5 py-1 text-xs font-medium text-white">
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-white">
                     {TYPE_ICON[selectedReport.type]} {TYPE_LABEL[selectedReport.type]}
                   </span>
                   <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold ${IMPACT_BADGE_CLASS[selectedReport.impact_level]}`}>
@@ -254,34 +249,34 @@ export function ApprovedReports() {
                 </div>
 
                 <div>
-                  <p className="text-white font-semibold leading-snug">
+                  <p className="text-slate-900 dark:text-white font-semibold leading-snug">
                     {selectedReport.location}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-gray-500 mt-1">
                     {IMPACT_DESCRIPTION[selectedReport.type][selectedReport.impact_level]}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div className="bg-[#020817] rounded-lg px-3 py-2.5">
-                    <p className="text-xs text-gray-500 mb-0.5">Latitude</p>
-                    <p className="text-sm font-mono text-white">{selectedReport.lat.toFixed(5)}</p>
+                  <div className="bg-slate-50 dark:bg-[#020817] rounded-lg px-3 py-2.5 border border-slate-100 dark:border-transparent">
+                    <p className="text-xs text-slate-400 dark:text-gray-500 mb-0.5">Latitude</p>
+                    <p className="text-sm font-mono text-slate-900 dark:text-white">{selectedReport.lat.toFixed(5)}</p>
                   </div>
-                  <div className="bg-[#020817] rounded-lg px-3 py-2.5">
-                    <p className="text-xs text-gray-500 mb-0.5">Longitude</p>
-                    <p className="text-sm font-mono text-white">{selectedReport.lng.toFixed(5)}</p>
+                  <div className="bg-slate-50 dark:bg-[#020817] rounded-lg px-3 py-2.5 border border-slate-100 dark:border-transparent">
+                    <p className="text-xs text-slate-400 dark:text-gray-500 mb-0.5">Longitude</p>
+                    <p className="text-sm font-mono text-slate-900 dark:text-white">{selectedReport.lng.toFixed(5)}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-1">
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-slate-400 dark:text-gray-500">
                     Reported {new Date(selectedReport.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
                   </p>
                   <a
                     href={`https://www.google.com/maps?q=${selectedReport.lat},${selectedReport.lng}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 dark:hover:text-cyan-300 transition-colors"
                   >
                     <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
                     View on Google Maps
@@ -308,13 +303,11 @@ export function ApprovedReports() {
                       ],
                     }}
                   >
-                    <Marker
-                      position={{ lat: selectedReport.lat, lng: selectedReport.lng }}
-                    />
+                    <Marker position={{ lat: selectedReport.lat, lng: selectedReport.lng }} />
                   </GoogleMap>
                 ) : (
-                  <div className="h-full bg-slate-900 flex items-center justify-center">
-                    <p className="text-sm text-gray-500">Loading map…</p>
+                  <div className="h-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
+                    <p className="text-sm text-slate-400 dark:text-gray-500">Loading map…</p>
                   </div>
                 )}
               </div>

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Dialog, DialogPanel } from '@headlessui/react';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { useTheme } from './ThemeProvider';
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -16,6 +17,7 @@ const navigation = [
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -28,7 +30,7 @@ export default function Navbar() {
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
           scrolled
-            ? 'bg-[#020817]/80 backdrop-blur-md border-b border-white/5 shadow-xl shadow-black/20'
+            ? 'bg-white/80 dark:bg-[#020817]/80 backdrop-blur-md border-b border-slate-200 dark:border-white/5 shadow-sm dark:shadow-xl dark:shadow-black/20'
             : 'bg-transparent'
         }`}
       >
@@ -37,35 +39,34 @@ export default function Navbar() {
           <div className="flex lg:flex-1">
             <a href="/" className="flex items-center gap-2.5">
               <div className="h-7 w-7 rounded-lg bg-cyan-500 flex items-center justify-center shrink-0">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  className="text-[#020817]"
-                >
-                  <path
-                    d="M7 1L13 4V7C13 10.3 10.3 13 7 13C3.7 13 1 10.3 1 7V4L7 1Z"
-                    fill="currentColor"
-                    fillOpacity="0.3"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinejoin="round"
-                  />
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-white dark:text-[#020817]">
+                  <path d="M7 1L13 4V7C13 10.3 10.3 13 7 13C3.7 13 1 10.3 1 7V4L7 1Z" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
                   <circle cx="7" cy="7.5" r="1.5" fill="currentColor" />
                 </svg>
               </div>
-              <span className="text-sm font-semibold tracking-tight text-white">
-                Road<span className="text-cyan-400">Watch</span>
+              <span className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">
+                Road<span className="text-cyan-500 dark:text-cyan-400">Watch</span>
               </span>
             </a>
           </div>
 
-          {/* Mobile menu button */}
-          <div className="flex lg:hidden">
+          {/* Mobile controls */}
+          <div className="flex lg:hidden items-center gap-2">
+            {/* Theme toggle mobile */}
+            <button
+              onClick={toggleTheme}
+              className="rounded-lg p-2 text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? (
+                <SunIcon className="h-4 w-4" />
+              ) : (
+                <MoonIcon className="h-4 w-4" />
+              )}
+            </button>
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="rounded-lg p-2 text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+              className="rounded-lg p-2 text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
             >
               <Bars3Icon className="h-5 w-5" />
             </button>
@@ -77,18 +78,30 @@ export default function Navbar() {
               <a
                 key={item.name}
                 href={item.href}
-                className="text-sm text-gray-400 hover:text-white transition-colors font-medium"
+                className="text-sm text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-colors font-medium"
               >
                 {item.name}
               </a>
             ))}
           </div>
 
-          {/* Desktop CTA */}
-          <div className="hidden lg:flex lg:flex-1 lg:justify-end">
+          {/* Desktop right side */}
+          <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-3">
+            {/* Theme toggle desktop */}
+            <button
+              onClick={toggleTheme}
+              className="rounded-lg p-2 text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors border border-slate-200 dark:border-white/10"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? (
+                <SunIcon className="h-4 w-4" />
+              ) : (
+                <MoonIcon className="h-4 w-4" />
+              )}
+            </button>
             <a
               href="/report"
-              className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-[#020817] hover:bg-cyan-400 active:scale-95 transition-all shadow-lg shadow-cyan-500/20"
+              className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white dark:text-[#020817] hover:bg-cyan-400 active:scale-95 transition-all shadow-lg shadow-cyan-500/20"
             >
               Report an issue
             </a>
@@ -96,41 +109,24 @@ export default function Navbar() {
         </nav>
 
         {/* MOBILE MENU */}
-        <Dialog
-          open={mobileMenuOpen}
-          onClose={setMobileMenuOpen}
-          className="lg:hidden"
-        >
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" />
-          <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full bg-[#020817] border-l border-white/5 p-6 sm:max-w-sm">
+        <Dialog open={mobileMenuOpen} onClose={setMobileMenuOpen} className="lg:hidden">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" />
+          <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full bg-white dark:bg-[#020817] border-l border-slate-200 dark:border-white/5 p-6 sm:max-w-sm">
             <div className="flex items-center justify-between mb-8">
               <a href="/" className="flex items-center gap-2.5">
                 <div className="h-7 w-7 rounded-lg bg-cyan-500 flex items-center justify-center shrink-0">
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 14 14"
-                    fill="none"
-                    className="text-[#020817]"
-                  >
-                    <path
-                      d="M7 1L13 4V7C13 10.3 10.3 13 7 13C3.7 13 1 10.3 1 7V4L7 1Z"
-                      fill="currentColor"
-                      fillOpacity="0.3"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinejoin="round"
-                    />
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-white dark:text-[#020817]">
+                    <path d="M7 1L13 4V7C13 10.3 10.3 13 7 13C3.7 13 1 10.3 1 7V4L7 1Z" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
                     <circle cx="7" cy="7.5" r="1.5" fill="currentColor" />
                   </svg>
                 </div>
-                <span className="text-sm font-semibold text-white">
-                  Road<span className="text-cyan-400">Watch</span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                  Road<span className="text-cyan-500 dark:text-cyan-400">Watch</span>
                 </span>
               </a>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="rounded-lg p-2 text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                className="rounded-lg p-2 text-slate-500 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
               >
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -141,16 +137,16 @@ export default function Navbar() {
                 <a
                   key={item.name}
                   href={item.href}
-                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.name}
                 </a>
               ))}
-              <div className="pt-4">
+              <div className="pt-4 space-y-2">
                 <a
                   href="/report"
-                  className="block rounded-lg bg-cyan-500 px-4 py-2.5 text-center text-sm font-semibold text-[#020817] hover:bg-cyan-400 transition-colors"
+                  className="block rounded-lg bg-cyan-500 px-4 py-2.5 text-center text-sm font-semibold text-white dark:text-[#020817] hover:bg-cyan-400 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Report an issue
