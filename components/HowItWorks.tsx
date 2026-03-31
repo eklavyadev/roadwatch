@@ -12,81 +12,86 @@ const steps = [
   {
     title: 'Capture the Issue',
     description:
-      'Citizens capture a photo of a civic issue such as a pothole, broken streetlight, traffic signal problem, or open drainage, along with a brief location reference.',
+      'Citizens photograph a civic problem — pothole, broken streetlight, traffic signal, or open drainage.',
     icon: CameraIcon,
   },
   {
-    title: 'Auto Location Tagging',
+    title: 'Auto Location Tag',
     description:
-      'The system automatically records precise GPS coordinates to accurately place the issue on the city map.',
+      'GPS coordinates are recorded automatically to pin the issue precisely on the city map.',
     icon: MapPinIcon,
   },
   {
-    title: 'AI‑Powered Verification',
+    title: 'AI Verification',
     description:
-      'An AI moderation service analyzes the image and metadata to verify relevance, detect duplicates, and filter spam or invalid reports.',
+      'AI analyzes the image and metadata — verifying relevance, detecting duplicates, filtering spam.',
     icon: CpuChipIcon,
   },
   {
     title: 'Admin Oversight',
     description:
-      'Administrators can review flagged or high‑impact reports and override AI decisions when required to ensure accuracy.',
+      'Administrators review flagged reports and override AI decisions to ensure accuracy.',
     icon: ShieldCheckIcon,
   },
   {
-    title: 'Visible on Public Map',
+    title: 'Public Map',
     description:
-      'Only verified civic issues appear on the public map, enabling authorities and citizens to track and prioritize infrastructure problems.',
+      'Only verified issues appear on the public map, enabling authorities to track and prioritize.',
     icon: GlobeAltIcon,
   },
 ];
 
 export default function HowItWorks() {
   return (
-    <section id="how" className="bg-[#020817] px-6 py-20">
-      <div className="mx-auto max-w-6xl">
+    <section id="how" className="relative bg-[#020817] px-6 py-24 overflow-hidden">
+      {/* Top separator */}
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
 
+      <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl sm:text-4xl font-semibold text-white">
+        <div className="text-center max-w-xl mx-auto mb-16">
+          <p className="text-xs font-semibold uppercase tracking-widest text-cyan-500 mb-3">
+            Process
+          </p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white">
             How Road<span className="text-cyan-400">Watch</span> Works
           </h2>
-          <p className="mt-4 text-gray-400">
-            A fast, validation‑first workflow that converts citizen reports
-            into reliable, actionable civic infrastructure data.
+          <p className="mt-4 text-sm text-gray-500 leading-relaxed">
+            A validation-first workflow that converts citizen reports into
+            reliable, actionable civic infrastructure data.
           </p>
         </div>
 
-        {/* Steps */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
+        {/* Steps grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 relative">
+          {/* Connecting line on desktop */}
+          <div className="hidden lg:block absolute top-[2.25rem] left-[calc(10%+1rem)] right-[calc(10%+1rem)] h-px bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
+
           {steps.map((step, index) => (
-            <div
-              key={index}
-              className="relative bg-[#0f172a] border border-slate-700 rounded-lg p-6"
-            >
-              {/* Step number */}
-              <span className="absolute -top-3 -left-3 h-8 w-8 rounded-full bg-cyan-500 text-[#020817] flex items-center justify-center text-sm font-bold">
-                {index + 1}
-              </span>
+            <div key={index} className="group relative">
+              <div className="h-full bg-[#0c1525] border border-slate-800 rounded-xl p-5 hover:border-cyan-500/30 hover:bg-[#0f1f35] transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/5">
 
-              {/* Icon */}
-              <step.icon className="h-10 w-10 text-cyan-400 mb-4" />
+                {/* Top row: number + icon */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="h-9 w-9 rounded-full bg-[#020817] border border-slate-700 group-hover:border-cyan-500/40 flex items-center justify-center text-xs font-bold text-cyan-400 transition-colors shrink-0">
+                    {index + 1}
+                  </div>
+                  <step.icon className="h-5 w-5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
+                </div>
 
-              {/* Content */}
-              <h3 className="text-lg font-semibold text-white mb-2">
-                {step.title}
-              </h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                {step.description}
-              </p>
+                <h3 className="text-sm font-semibold text-white mb-1.5">
+                  {step.title}
+                </h3>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  {step.description}
+                </p>
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Footer note */}
-        <p className="mt-14 text-center text-sm text-gray-500">
-          AI enables scalable verification, while human oversight maintains
-          transparency, accountability, and trust.
+        <p className="mt-12 text-center text-xs text-gray-600">
+          AI enables scalable verification · Human oversight maintains trust
         </p>
       </div>
     </section>

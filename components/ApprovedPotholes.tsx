@@ -6,6 +6,12 @@ import {
   Marker,
   useLoadScript,
 } from '@react-google-maps/api';
+import {
+  MapPinIcon,
+  CalendarDaysIcon,
+  ArrowTopRightOnSquareIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
 
 type Report = {
   id: string;
@@ -22,7 +28,6 @@ type Report = {
 
 const PAGE_SIZE = 6;
 
-/* ---------- LABEL + COLOR HELPERS ---------- */
 const IMPACT_LABEL: Record<number, string> = {
   1: 'Low',
   2: 'Medium',
@@ -30,9 +35,9 @@ const IMPACT_LABEL: Record<number, string> = {
 };
 
 const IMPACT_BADGE_CLASS: Record<number, string> = {
-  1: 'bg-green-600 text-white',
-  2: 'bg-yellow-500 text-black',
-  3: 'bg-red-600 text-white',
+  1: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
+  2: 'bg-amber-500/15 text-amber-400 border border-amber-500/25',
+  3: 'bg-red-500/15 text-red-400 border border-red-500/25',
 };
 
 const TYPE_LABEL: Record<Report['type'], string> = {
@@ -42,30 +47,33 @@ const TYPE_LABEL: Record<Report['type'], string> = {
   open_drainage: 'Open Drainage',
 };
 
-/* ---------- PUBLIC DESCRIPTION ---------- */
-const IMPACT_DESCRIPTION: Record<
-  Report['type'],
-  Record<number, string>
-> = {
+const TYPE_ICON: Record<Report['type'], string> = {
+  pothole: '🕳️',
+  streetlight: '💡',
+  traffic_signal: '🚦',
+  open_drainage: '🚧',
+};
+
+const IMPACT_DESCRIPTION: Record<Report['type'], Record<number, string>> = {
   pothole: {
-    1: '🕳️ Minor surface damage',
-    2: '🕳️ Moderate dip / uneven road',
-    3: '🕳️ Severe accident‑prone pothole',
+    1: 'Minor surface damage',
+    2: 'Moderate dip / uneven road',
+    3: 'Severe accident‑prone pothole',
   },
   streetlight: {
-    1: '💡 Streetlight flickering occasionally',
-    2: '💡 Streetlight often off or unstable',
-    3: '💡 Streetlight completely not working',
+    1: 'Streetlight flickering occasionally',
+    2: 'Streetlight often off or unstable',
+    3: 'Streetlight completely not working',
   },
   traffic_signal: {
-    1: '🚦 Signal responding with delay',
-    2: '🚦 Signal stuck on one color',
-    3: '🚦 Traffic signal not functioning',
+    1: 'Signal responding with delay',
+    2: 'Signal stuck on one color',
+    3: 'Traffic signal not functioning',
   },
   open_drainage: {
-    1: '🚧 Drain partially open',
-    2: '🚧 Drain fully open',
-    3: '🚧 Deep open drain posing danger',
+    1: 'Drain partially open',
+    2: 'Drain fully open',
+    3: 'Deep open drain posing danger',
   },
 };
 
@@ -83,9 +91,7 @@ export function ApprovedReports() {
     fetch('/api/admin/reports')
       .then((res) => res.json())
       .then((data) => {
-        const approved = data.filter(
-          (r: Report) => r.status === 'approved'
-        );
+        const approved = data.filter((r: Report) => r.status === 'approved');
         setReports(approved);
         setLoading(false);
       })
@@ -93,13 +99,29 @@ export function ApprovedReports() {
   }, []);
 
   if (loading) {
-    return <p className="text-gray-400 text-sm">Loading verified reports…</p>;
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => (
+          <div
+            key={i}
+            className="bg-[#0c1525] border border-slate-800 rounded-xl overflow-hidden animate-pulse"
+          >
+            <div className="h-48 bg-slate-800" />
+            <div className="p-4 space-y-3">
+              <div className="h-4 bg-slate-800 rounded w-3/4" />
+              <div className="h-3 bg-slate-800 rounded w-1/2" />
+              <div className="h-3 bg-slate-800 rounded w-2/3" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   if (reports.length === 0) {
     return (
-      <div className="border border-dashed border-slate-700 rounded p-8 text-center">
-        <p className="text-gray-400">No verified reports yet.</p>
+      <div className="border border-dashed border-slate-800 rounded-xl p-16 text-center">
+        <p className="text-gray-500 text-sm">No verified reports yet.</p>
       </div>
     );
   }
@@ -111,68 +133,59 @@ export function ApprovedReports() {
 
   return (
     <>
-      {/* ---------- CARDS ---------- */}
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="space-y-8">
+        {/* Cards grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {visibleReports.map((r) => {
             const level = Number(r.impact_level);
-
             return (
               <div
                 key={r.id}
                 onClick={() => setSelectedReport(r)}
-                className="cursor-pointer bg-[#0f172a] border border-slate-700 rounded overflow-hidden hover:border-cyan-400 transition"
+                className="group cursor-pointer bg-[#0c1525] border border-slate-800 rounded-xl overflow-hidden hover:border-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/5 transition-all duration-300"
               >
-                <div className="bg-black">
+                {/* Image */}
+                <div className="relative bg-slate-900 overflow-hidden">
                   <img
                     src={r.image_url}
                     alt={r.type}
-                    className="h-48 w-full object-cover"
+                    className="h-48 w-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                </div>
-
-                <div className="p-4 space-y-2 text-sm text-slate-300">
-                  <p className="text-white font-semibold">{r.location}</p>
-
-                  <p>
-                    <span className="text-white font-medium">Issue Type:</span>{' '}
-                    {TYPE_LABEL[r.type]}
-                  </p>
-
-                  <p>
-                    <span className="text-white font-medium">Coordinates:</span>{' '}
-                    {r.lat.toFixed(5)}, {r.lng.toFixed(5)}
-                  </p>
-
-                  <p>
-                    <span className="text-white font-medium">Impact Level:</span>{' '}
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${
-                        IMPACT_BADGE_CLASS[level]
-                      }`}
-                    >
+                  {/* Type badge overlaid on image */}
+                  <div className="absolute top-3 left-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-black/60 backdrop-blur-sm px-2.5 py-1 text-xs font-medium text-white border border-white/10">
+                      <span>{TYPE_ICON[r.type]}</span>
+                      {TYPE_LABEL[r.type]}
+                    </span>
+                  </div>
+                  {/* Impact badge */}
+                  <div className="absolute top-3 right-3">
+                    <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold ${IMPACT_BADGE_CLASS[level]}`}>
                       {IMPACT_LABEL[level]}
                     </span>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-4 space-y-2.5">
+                  <p className="text-white font-medium text-sm leading-snug line-clamp-2">
+                    {r.location}
                   </p>
 
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-gray-500">
                     {IMPACT_DESCRIPTION[r.type][level]}
                   </p>
 
-                  <p className="text-xs text-slate-400">
-                    Reported on:{' '}
-                    {new Date(r.created_at).toLocaleDateString()}
-                  </p>
-
-                  <a
-                    href={`https://www.google.com/maps?q=${r.lat},${r.lng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-cyan-400 text-xs underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    View on Google Maps
-                  </a>
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <MapPinIcon className="h-3.5 w-3.5" />
+                      <span>{r.lat.toFixed(4)}, {r.lng.toFixed(4)}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <CalendarDaysIcon className="h-3.5 w-3.5" />
+                      <span>{new Date(r.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
@@ -181,25 +194,21 @@ export function ApprovedReports() {
 
         {/* Pagination */}
         {reports.length > PAGE_SIZE && (
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center justify-center gap-3">
             <button
               onClick={() => setPage((p) => Math.max(p - 1, 0))}
               disabled={page === 0}
-              className="px-4 py-2 rounded bg-slate-700 text-white text-sm"
+              className="px-4 py-2 rounded-lg bg-[#0c1525] border border-slate-800 text-sm text-gray-400 hover:text-white hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               ← Previous
             </button>
-
-            <span className="text-sm text-gray-400">
+            <span className="text-sm text-gray-500">
               Page {page + 1} of {totalPages}
             </span>
-
             <button
-              onClick={() =>
-                setPage((p) => Math.min(p + 1, totalPages - 1))
-              }
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages - 1))}
               disabled={page === totalPages - 1}
-              className="px-4 py-2 rounded bg-slate-700 text-white text-sm"
+              className="px-4 py-2 rounded-lg bg-[#0c1525] border border-slate-800 text-sm text-gray-400 hover:text-white hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               Next →
             </button>
@@ -207,118 +216,112 @@ export function ApprovedReports() {
         )}
       </div>
 
-      {/* ---------- MODAL ---------- */}
-      {/* ---------- MODAL ---------- */}
-{selectedReport && (
-  <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 sm:p-6">
-    <div className="relative bg-[#020817] border border-slate-700 rounded-lg w-full max-w-6xl overflow-hidden">
-
-      {/* ---------- HEADER (CLOSE BUTTON SAFE AREA) ---------- */}
-      <div className="absolute top-0 right-0 z-50 p-3">
-        <button
+      {/* MODAL */}
+      {selectedReport && (
+        <div
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setSelectedReport(null)}
-          className="h-10 w-10 flex items-center justify-center rounded-full
-                     bg-black/80 text-white hover:bg-black
-                     border border-slate-600 text-lg"
-          aria-label="Close modal"
         >
-          ✕
-        </button>
-      </div>
-
-      {/* ---------- CONTENT ---------- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[90vh] overflow-y-auto">
-
-        {/* ---------- LEFT : DETAILS ---------- */}
-        <div className="p-6 space-y-4">
-
-          {/* Image */}
-          <img
-            src={selectedReport.image_url}
-            alt={selectedReport.type}
-            className="rounded w-full h-64 sm:h-72 object-cover"
-          />
-
-          {/* Location */}
-          <p className="text-white font-semibold text-lg">
-            {selectedReport.location}
-          </p>
-
-          {/* Issue Type */}
-          <p className="text-sm text-slate-300">
-            <span className="text-white font-medium">Issue Type:</span>{' '}
-            {TYPE_LABEL[selectedReport.type]}
-          </p>
-
-          {/* Coordinates */}
-          <p className="text-sm text-slate-300">
-            <span className="text-white font-medium">Coordinates:</span>{' '}
-            {selectedReport.lat.toFixed(5)}, {selectedReport.lng.toFixed(5)}
-          </p>
-
-          {/* Impact Level */}
-          <p className="text-sm text-slate-300">
-            <span className="text-white font-medium">Impact Level:</span>{' '}
-            <span
-              className={`px-2 py-1 rounded text-xs font-semibold ${
-                IMPACT_BADGE_CLASS[selectedReport.impact_level]
-              }`}
-            >
-              {IMPACT_LABEL[selectedReport.impact_level]}
-            </span>
-          </p>
-
-          {/* Description */}
-          <p className="text-sm text-slate-400 leading-relaxed">
-            {
-              IMPACT_DESCRIPTION[selectedReport.type][
-                selectedReport.impact_level
-              ]
-            }
-          </p>
-
-          {/* Date */}
-          <p className="text-xs text-slate-400">
-            Reported on:{' '}
-            {new Date(selectedReport.created_at).toLocaleDateString()}
-          </p>
-
-          {/* Google Maps link (KEPT) */}
-          <a
-            href={`https://www.google.com/maps?q=${selectedReport.lat},${selectedReport.lng}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-cyan-400 text-sm underline inline-block"
+          <div
+            className="relative bg-[#0c1525] border border-slate-700/50 rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            View on Google Maps
-          </a>
-        </div>
-
-        {/* ---------- RIGHT : MAP ---------- */}
-        {isLoaded && (
-          <div className="h-64 md:h-auto min-h-[300px]">
-            <GoogleMap
-              mapContainerStyle={{ width: '100%', height: '100%' }}
-              zoom={16}
-              center={{
-                lat: selectedReport.lat,
-                lng: selectedReport.lng,
-              }}
+            {/* Close */}
+            <button
+              onClick={() => setSelectedReport(null)}
+              className="absolute top-4 right-4 z-10 h-9 w-9 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm border border-white/10 text-gray-400 hover:text-white transition-colors"
             >
-              <Marker
-                position={{
-                  lat: selectedReport.lat,
-                  lng: selectedReport.lng,
-                }}
-              />
-            </GoogleMap>
-          </div>
-        )}
-      </div>
-    </div>
-  </div>
-)}
+              <XMarkIcon className="h-4 w-4" />
+            </button>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 max-h-[88vh] overflow-y-auto">
+              {/* Left: Details */}
+              <div className="p-6 space-y-4">
+                <img
+                  src={selectedReport.image_url}
+                  alt={selectedReport.type}
+                  className="rounded-xl w-full h-60 object-cover"
+                />
+
+                {/* Type + Impact row */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-white/5 border border-white/10 px-2.5 py-1 text-xs font-medium text-white">
+                    {TYPE_ICON[selectedReport.type]} {TYPE_LABEL[selectedReport.type]}
+                  </span>
+                  <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold ${IMPACT_BADGE_CLASS[selectedReport.impact_level]}`}>
+                    {IMPACT_LABEL[selectedReport.impact_level]} Impact
+                  </span>
+                </div>
+
+                <div>
+                  <p className="text-white font-semibold leading-snug">
+                    {selectedReport.location}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {IMPACT_DESCRIPTION[selectedReport.type][selectedReport.impact_level]}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="bg-[#020817] rounded-lg px-3 py-2.5">
+                    <p className="text-xs text-gray-500 mb-0.5">Latitude</p>
+                    <p className="text-sm font-mono text-white">{selectedReport.lat.toFixed(5)}</p>
+                  </div>
+                  <div className="bg-[#020817] rounded-lg px-3 py-2.5">
+                    <p className="text-xs text-gray-500 mb-0.5">Longitude</p>
+                    <p className="text-sm font-mono text-white">{selectedReport.lng.toFixed(5)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <p className="text-xs text-gray-500">
+                    Reported {new Date(selectedReport.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </p>
+                  <a
+                    href={`https://www.google.com/maps?q=${selectedReport.lat},${selectedReport.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                  >
+                    <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
+                    View on Google Maps
+                  </a>
+                </div>
+              </div>
+
+              {/* Right: Map */}
+              <div className="h-64 md:h-auto min-h-[320px]">
+                {isLoaded ? (
+                  <GoogleMap
+                    mapContainerStyle={{ width: '100%', height: '100%' }}
+                    zoom={16}
+                    center={{ lat: selectedReport.lat, lng: selectedReport.lng }}
+                    options={{
+                      disableDefaultUI: true,
+                      zoomControl: true,
+                      styles: [
+                        { elementType: 'geometry', stylers: [{ color: '#1a2744' }] },
+                        { elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
+                        { elementType: 'labels.text.stroke', stylers: [{ color: '#1a2744' }] },
+                        { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2d3f6b' }] },
+                        { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f1d33' }] },
+                      ],
+                    }}
+                  >
+                    <Marker
+                      position={{ lat: selectedReport.lat, lng: selectedReport.lng }}
+                    />
+                  </GoogleMap>
+                ) : (
+                  <div className="h-full bg-slate-900 flex items-center justify-center">
+                    <p className="text-sm text-gray-500">Loading map…</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

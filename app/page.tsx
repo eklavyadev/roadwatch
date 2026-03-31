@@ -18,30 +18,44 @@ export default function HomePage() {
       <HowItWorks />
 
       {/* VERIFIED REPORTS */}
-      <section id="approved" className="bg-[#020817] px-6 py-20">
+      <section id="approved" className="relative bg-[#020817] px-6 py-24">
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
         <div className="mx-auto max-w-7xl">
-          <h2 className="text-3xl font-semibold text-white mb-2">
-            Verified Road Issues
-          </h2>
-          <p className="text-gray-400 mb-10">
-            Recently approved civic issues reported by citizens
-          </p>
+          <div className="mb-12">
+            <p className="text-xs font-semibold uppercase tracking-widest text-cyan-500 mb-2">
+              Verified reports
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white">
+              Civic Issues Near You
+            </h2>
+            <p className="text-gray-500 text-sm mt-2 max-w-md">
+              Real issues reported and verified by AI, visible to the public and actionable by authorities.
+            </p>
+          </div>
 
           <ApprovedReports />
         </div>
       </section>
 
       {/* MAP SECTION */}
-      <section id="map" className="bg-[#020817] px-6 py-20">
+      <section id="map" className="relative bg-[#020817] px-6 py-24">
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
         <div className="mx-auto max-w-7xl">
-          <h2 className="text-3xl font-semibold text-white mb-2">
-            Issues on Map
-          </h2>
-          <p className="text-gray-400 mb-8">
-            Geographic overview of all verified reports
-          </p>
+          <div className="mb-10">
+            <p className="text-xs font-semibold uppercase tracking-widest text-cyan-500 mb-2">
+              Live map
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white">
+              Issues on Map
+            </h2>
+            <p className="text-gray-500 text-sm mt-2">
+              Geographic overview of all verified road infrastructure reports.
+            </p>
+          </div>
 
-          <ApprovedPotholesMap />
+          <div className="rounded-2xl overflow-hidden border border-slate-800">
+            <ApprovedPotholesMap />
+          </div>
         </div>
       </section>
     </div>
