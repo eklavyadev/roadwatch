@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import VideoAnalysis from '@/components/VideoAnalysis';
 
 /* ---------- TYPES ---------- */
 type Report = {
@@ -67,7 +68,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [reports, setReports] = useState<Report[]>([]);
   const [activeTab, setActiveTab] =
-    useState<'pending' | 'approved' | 'rejected'>('pending');
+    useState<'pending' | 'approved' | 'rejected' | 'video-analysis'>('pending');
   const [toast, setToast] = useState<string | null>(null);
 
   /* ---------- TOAST ---------- */
@@ -90,7 +91,7 @@ export default function AdminPage() {
   const fetchReports = async () => {
     const res = await fetch('/api/admin/reports');
     const data = await res.json();
-    setReports(data);
+    setReports(Array.isArray(data) ? data : []);
   };
 
   const updateStatus = async (
@@ -158,26 +159,34 @@ export default function AdminPage() {
       <h1 className="text-2xl font-bold mb-6">Admin Panel</h1>
 
       {/* Tabs */}
-      <div className="flex gap-4 mb-6">
-        {['pending', 'approved', 'rejected'].map((tab) => (
+      <div className="flex gap-4 mb-6 flex-wrap">
+        {[
+          { key: 'pending',        label: 'Pending' },
+          { key: 'approved',       label: 'Approved' },
+          { key: 'rejected',       label: 'Rejected' },
+          { key: 'video-analysis', label: '🎬 Video Analysis' },
+        ].map(({ key, label }) => (
           <button
-            key={tab}
+            key={key}
             onClick={() =>
-              setActiveTab(tab as 'pending' | 'approved' | 'rejected')
+              setActiveTab(key as 'pending' | 'approved' | 'rejected' | 'video-analysis')
             }
-            className={`px-4 py-2 rounded capitalize ${
-              activeTab === tab
+            className={`px-4 py-2 rounded ${
+              activeTab === key
                 ? 'bg-white text-black'
                 : 'bg-[#0f172a] text-slate-300 border border-slate-700'
             }`}
           >
-            {tab}
+            {label}
           </button>
         ))}
       </div>
 
+      {/* Video Analysis tab */}
+      {activeTab === 'video-analysis' && <VideoAnalysis />}
+
       {/* Reports */}
-      {filteredReports.length === 0 ? (
+      {activeTab !== 'video-analysis' && (filteredReports.length === 0 ? (
         <div className="border border-dashed border-slate-700 rounded p-10 text-center">
           <p className="text-gray-400 text-lg">
             No {activeTab} reports
@@ -288,7 +297,7 @@ export default function AdminPage() {
             </div>
           ))}
         </div>
-      )}
+      ))}
 
       {/* Toast */}
       {toast && (
