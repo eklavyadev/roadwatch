@@ -296,6 +296,7 @@ export default function VideoAnalysis() {
   const [frames,       setFrames]       = useState({ done: 0, total: 0 });
   const [error,        setError]        = useState<string | null>(null);
   const [currentFile,  setCurrentFile]  = useState('');
+  const [deleting,     setDeleting]     = useState<string | null>(null);
   const esRef                           = useRef<EventSource | null>(null);
 
   /* ---------- LOAD HISTORY ---------- */
@@ -392,6 +393,21 @@ export default function VideoAnalysis() {
     }
   };
 
+  /* ---------- DELETE ---------- */
+  const deleteAnalysis = async (id: string) => {
+    if (!confirm('Delete this analysis permanently?')) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/video-analysis/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setAnalyses((prev) => prev.filter((a) => a.id !== id));
+        if (selected?.id === id) setSelected(null);
+      }
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   /* ================================================================
      RENDER
      ================================================================ */
@@ -472,36 +488,52 @@ export default function VideoAnalysis() {
             </p>
             <div className="space-y-2 max-h-[680px] overflow-y-auto pr-1">
               {analyses.map((a) => (
-                <button
+                <div
                   key={a.id}
-                  onClick={() => setSelected(a)}
-                  className={`w-full text-left rounded-lg border px-4 py-3 transition
+                  className={`rounded-lg border transition
                     ${selected?.id === a.id
                       ? 'border-cyan-500 bg-cyan-950/30'
                       : 'border-slate-700 bg-[#0f172a] hover:border-slate-500'}`}
                 >
-                  {/* filename */}
-                  <p className="text-sm text-white font-medium truncate mb-1.5">
-                    🎬 {a.filename}
-                  </p>
-                  {/* meta row */}
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-slate-500 truncate">
-                      {new Date(a.created_at).toLocaleDateString(undefined, {
-                        day: '2-digit', month: 'short', year: 'numeric',
-                      })}&nbsp;·&nbsp;{timeAgo(a.created_at)}
-                    </span>
-                    <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded
-                      ${a.total_potholes > 0 ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
-                      {a.total_potholes} 🕳️
-                    </span>
+                  {/* clickable area */}
+                  <button
+                    className="w-full text-left px-4 pt-3 pb-2"
+                    onClick={() => setSelected(a)}
+                  >
+                    {/* filename */}
+                    <p className="text-sm text-white font-medium truncate mb-1.5">
+                      🎬 {a.filename}
+                    </p>
+                    {/* meta row */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-slate-500 truncate">
+                        {new Date(a.created_at).toLocaleDateString(undefined, {
+                          day: '2-digit', month: 'short', year: 'numeric',
+                        })}&nbsp;·&nbsp;{timeAgo(a.created_at)}
+                      </span>
+                      <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded
+                        ${a.total_potholes > 0 ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                        {a.total_potholes} 🕳️
+                      </span>
+                    </div>
+                    {/* frame count */}
+                    <p className="text-xs text-slate-600 mt-1">
+                      {a.total_frames.toLocaleString()} frames &nbsp;·&nbsp;
+                      ~{Math.round(a.total_frames / 30)}s
+                    </p>
+                  </button>
+
+                  {/* delete button */}
+                  <div className="px-4 pb-3">
+                    <button
+                      onClick={() => deleteAnalysis(a.id)}
+                      disabled={deleting === a.id}
+                      className="w-full text-xs text-red-400 border border-red-900/50 hover:bg-red-600 hover:text-white hover:border-red-600 disabled:opacity-40 py-1 rounded transition"
+                    >
+                      {deleting === a.id ? 'Deleting…' : '🗑 Delete'}
+                    </button>
                   </div>
-                  {/* frame count */}
-                  <p className="text-xs text-slate-600 mt-1">
-                    {a.total_frames.toLocaleString()} frames &nbsp;·&nbsp;
-                    ~{Math.round(a.total_frames / 30)}s
-                  </p>
-                </button>
+                </div>
               ))}
             </div>
           </div>
