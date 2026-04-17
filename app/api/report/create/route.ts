@@ -131,7 +131,7 @@ export async function POST(req: Request) {
     }
 
     /* ---------- 🔥 AI TRIGGER (NON-BLOCKING) ---------- */
-    fetch('https://roadwatch-ai.onrender.com/check', {
+    fetch(`${process.env.AI_SERVER_URL}/check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
