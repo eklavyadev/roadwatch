@@ -328,7 +328,7 @@ export default function VideoAnalysis() {
       const form = new FormData();
       form.append('file', file);
 
-      const res = await fetch(`${MODEL_API}/analyze-video`, {
+      const res = await fetch('/api/proxy/analyze-video', {
         method: 'POST',
         body: form,
       });
@@ -337,7 +337,7 @@ export default function VideoAnalysis() {
 
       setStatus('processing');
 
-      const es = new EventSource(`${MODEL_API}/progress/${task_id}`);
+      const es = new EventSource(`/api/proxy/progress/${task_id}`);
       esRef.current = es;
 
       es.onmessage = async (ev) => {
