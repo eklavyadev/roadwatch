@@ -11,7 +11,29 @@ export async function GET(
     `${process.env.AI_SERVER_URL}/progress/${task_id}`
   );
 
-  return new Response(aiRes.body, {
+  // Explicitly pump each chunk so events are flushed to the browser immediately
+  // instead of being buffered by the Node.js response stream
+  const stream = new ReadableStream({
+    async start(controller) {
+      const reader = aiRes.body!.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          controller.enqueue(value);
+        }
+      } catch (e) {
+        console.error('SSE PROXY ERROR:', e);
+      } finally {
+        controller.close();
+      }
+    },
+    cancel() {
+      // browser disconnected — nothing to clean up on this side
+    },
+  });
+
+  return new Response(stream, {
     headers: {
       'Content-Type':      'text/event-stream',
       'Cache-Control':     'no-cache',
