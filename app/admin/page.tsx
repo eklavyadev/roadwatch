@@ -136,6 +136,7 @@ export default function AdminPage() {
           <h2 className="text-lg font-bold mb-4 text-white">
             Admin Login
           </h2>
+          <form onSubmit={(e) => { e.preventDefault(); login(); }}>
           <input
             type="password"
             placeholder="Admin password"
@@ -143,11 +144,12 @@ export default function AdminPage() {
             onChange={(e) => setPassword(e.target.value)}
           />
           <button
-            onClick={login}
+            type="submit"
             className="w-full bg-white text-black py-2 rounded font-medium"
           >
             Login
           </button>
+          </form>
         </div>
       </div>
     );
