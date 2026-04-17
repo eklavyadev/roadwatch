@@ -379,8 +379,11 @@ export default function VideoAnalysis() {
       };
 
       es.onerror = () => {
-        setError('Lost connection to model server');
-        setStatus('error');
+        setStatus((prev) => {
+          if (prev === 'done') return 'done'; // server closed connection after completion — ignore
+          setError('Lost connection to model server');
+          return 'error';
+        });
         es.close();
       };
     } catch (err: any) {
