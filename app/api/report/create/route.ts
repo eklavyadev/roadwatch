@@ -23,8 +23,8 @@ export async function POST(req: Request) {
     const image = formData.get('image') as File | null;
     const location = formData.get('location') as string | null;
 
-    const lat = Number(formData.get('lat'));
-    const lng = Number(formData.get('lng'));
+    const lat = Math.abs(Number(formData.get('lat')));
+    const lng = Math.abs(Number(formData.get('lng')));
 
     const type = formData.get('type') as string | null;
     const impactLevel = Number(formData.get('impact_level'));

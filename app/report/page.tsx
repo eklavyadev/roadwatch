@@ -77,8 +77,8 @@ export default function ReportPotholePage() {
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const latitude = pos.coords.latitude;
-        const longitude = pos.coords.longitude;
+        const latitude = Math.abs(pos.coords.latitude);
+        const longitude = Math.abs(pos.coords.longitude);
 
         setLat(latitude);
         setLng(longitude);
