@@ -153,6 +153,10 @@ function DetailPanel({ analysis }: { analysis: Analysis }) {
                 { elementType: 'geometry',           stylers: [{ color: '#1e293b' }] },
                 { elementType: 'labels.text.fill',   stylers: [{ color: '#94a3b8' }] },
                 { elementType: 'labels.text.stroke', stylers: [{ color: '#0f172a' }] },
+                // Hide all POI markers (parks, courts, restaurants, etc.)
+                { featureType: 'poi',                stylers: [{ visibility: 'off' }] },
+                // Hide transit icons (bus stops, metro, etc.)
+                { featureType: 'transit',            stylers: [{ visibility: 'off' }] },
               ],
             }}
           >
