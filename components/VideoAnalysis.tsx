@@ -87,15 +87,22 @@ function buildJsonReport(analysis: Analysis) {
 /* ================================================================
    DETAIL PANEL  (map + JSON for a selected analysis)
    ================================================================ */
+const CONF_THRESHOLD = 0.5;
+
 function DetailPanel({ analysis }: { analysis: Analysis }) {
   const [active,   setActive]   = useState<Pothole | null>(null);
   const [jsonOpen, setJsonOpen] = useState(false);
   const [copied,   setCopied]   = useState(false);
+  const [showAll,  setShowAll]  = useState(false);
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
   });
 
-  const potholes   = analysis.potholes;
+  const allPotholes  = analysis.potholes;
+  const confirmed    = allPotholes.filter((p) => p.confidence >= CONF_THRESHOLD);
+  const possible     = allPotholes.filter((p) => p.confidence <  CONF_THRESHOLD);
+  const visible      = showAll ? allPotholes : confirmed;
+
   const jsonReport = buildJsonReport(analysis);
   const jsonStr    = JSON.stringify(jsonReport, null, 2);
 
@@ -121,9 +128,9 @@ function DetailPanel({ analysis }: { analysis: Analysis }) {
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Frames',   value: analysis.total_frames.toLocaleString() },
-          { label: 'Potholes', value: analysis.total_potholes },
-          { label: 'Duration', value: `~${Math.round(analysis.total_frames / 30)}s` },
+          { label: 'Frames',    value: analysis.total_frames.toLocaleString() },
+          { label: 'Confirmed', value: confirmed.length },
+          { label: 'Duration',  value: `~${Math.round(analysis.total_frames / 30)}s` },
         ].map(({ label, value }) => (
           <div key={label} className="bg-[#020817] border border-slate-700 rounded-lg p-3 text-center">
             <p className="text-xl font-bold text-cyan-400">{value}</p>
@@ -133,16 +140,16 @@ function DetailPanel({ analysis }: { analysis: Analysis }) {
       </div>
 
       {/* Map */}
-      {potholes.length > 0 && isLoaded ? (
+      {visible.length > 0 && isLoaded ? (
         <div className="rounded-lg overflow-hidden border border-slate-700">
           <GoogleMap
             mapContainerStyle={{ width: '100%', height: '360px' }}
             zoom={16}
-            center={{ lat: potholes[0].latitude, lng: potholes[0].longitude }}
+            center={{ lat: visible[0].latitude, lng: visible[0].longitude }}
             onLoad={(map) => {
-              if (potholes.length > 1) {
+              if (visible.length > 1) {
                 const bounds = new window.google.maps.LatLngBounds();
-                potholes.forEach((p) =>
+                visible.forEach((p) =>
                   bounds.extend({ lat: p.latitude, lng: p.longitude })
                 );
                 map.fitBounds(bounds);
@@ -160,7 +167,7 @@ function DetailPanel({ analysis }: { analysis: Analysis }) {
               ],
             }}
           >
-            {potholes.map((p) => (
+            {visible.map((p) => (
               <Marker
                 key={p.id}
                 position={{ lat: p.latitude, lng: p.longitude }}
@@ -185,7 +192,7 @@ function DetailPanel({ analysis }: { analysis: Analysis }) {
             )}
           </GoogleMap>
         </div>
-      ) : potholes.length === 0 ? (
+      ) : allPotholes.length === 0 ? (
         <div className="border border-dashed border-slate-700 rounded-lg p-8 text-center text-slate-500 text-sm">
           No potholes detected in this video.
         </div>
@@ -195,19 +202,30 @@ function DetailPanel({ analysis }: { analysis: Analysis }) {
         </div>
       )}
 
-      {/* Legend */}
-      {potholes.length > 0 && (
-        <div className="flex gap-4 text-xs text-slate-500">
-          {[
-            { cls: 'bg-red-500',    label: 'High (>60%)' },
-            { cls: 'bg-yellow-500', label: 'Medium (40–60%)' },
-            { cls: 'bg-cyan-500',   label: 'Low (<40%)' },
-          ].map(({ cls, label }) => (
-            <span key={label} className="flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${cls}`} />
-              {label}
-            </span>
-          ))}
+      {/* Legend + show more toggle */}
+      {allPotholes.length > 0 && (
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex gap-4 text-xs text-slate-500">
+            {[
+              { cls: 'bg-red-500',    label: 'High (>60%)' },
+              { cls: 'bg-yellow-500', label: 'Medium (50–60%)' },
+            ].map(({ cls, label }) => (
+              <span key={label} className="flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${cls}`} />
+                {label}
+              </span>
+            ))}
+          </div>
+          {possible.length > 0 && (
+            <button
+              onClick={() => { setShowAll((v) => !v); setActive(null); }}
+              className="text-xs px-3 py-1 rounded border border-slate-600 text-slate-400 hover:border-cyan-500 hover:text-cyan-400 transition"
+            >
+              {showAll
+                ? '✕ Hide possible reports'
+                : `🔍 Show ${possible.length} more possible report${possible.length > 1 ? 's' : ''}`}
+            </button>
+          )}
         </div>
       )}
 
@@ -252,13 +270,13 @@ function DetailPanel({ analysis }: { analysis: Analysis }) {
       </div>
 
       {/* Pothole list */}
-      {potholes.length > 0 && (
+      {visible.length > 0 && (
         <div className="space-y-1.5">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Pothole Locations
           </p>
           <div className="divide-y divide-slate-700 border border-slate-700 rounded-lg overflow-hidden max-h-56 overflow-y-auto">
-            {potholes.map((p) => (
+            {visible.map((p) => (
               <div
                 key={p.id}
                 className={`flex items-center justify-between px-4 py-2.5 cursor-pointer transition text-sm
@@ -515,10 +533,15 @@ export default function VideoAnalysis() {
                           day: '2-digit', month: 'short', year: 'numeric',
                         })}&nbsp;·&nbsp;{timeAgo(a.created_at)}
                       </span>
-                      <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded
-                        ${a.total_potholes > 0 ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
-                        {a.total_potholes} 🕳️
-                      </span>
+                      {(() => {
+                        const count = a.potholes.filter((p) => p.confidence >= CONF_THRESHOLD).length;
+                        return (
+                          <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded
+                            ${count > 0 ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                            {count} 🕳️
+                          </span>
+                        );
+                      })()}
                     </div>
                     {/* frame count */}
                     <p className="text-xs text-slate-600 mt-1">
