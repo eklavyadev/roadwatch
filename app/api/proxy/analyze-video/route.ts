@@ -5,18 +5,17 @@ export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    // Forward raw bytes + original Content-Type (preserves multipart boundary)
     const contentType = req.headers.get('content-type') ?? '';
-    const body = await req.arrayBuffer();
 
     const aiRes = await fetch(`${process.env.AI_SERVER_URL}/analyze-video`, {
       method: 'POST',
-      body,
+      body: req.body,                  // stream directly — no buffering
       headers: { 'content-type': contentType },
-      redirect: 'manual', // never let fetch silently switch POST → GET on redirect
+      redirect: 'manual',
+      // @ts-ignore — required for streaming request bodies in Node.js fetch
+      duplex: 'half',
     });
 
-    // If tunnel/proxy issued a redirect, surface it as an error
     if (aiRes.status >= 300 && aiRes.status < 400) {
       console.error('REDIRECT FROM AI SERVER:', aiRes.status, aiRes.headers.get('location'));
       return NextResponse.json(
