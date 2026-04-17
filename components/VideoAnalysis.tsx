@@ -9,7 +9,7 @@ import {
 } from '@react-google-maps/api';
 
 const MODEL_API =
-  process.env.NEXT_PUBLIC_MODEL_API_URL ?? 'http://localhost:10000';
+  process.env.NEXT_PUBLIC_AI_SERVER_URL ?? '';
 
 /* ---------- TYPES ---------- */
 type Pothole = {
