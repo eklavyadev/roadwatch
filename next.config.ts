@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '100mb', // allow video uploads up to 100MB through the proxy
+    },
+  },
 };
 
 export default nextConfig;
