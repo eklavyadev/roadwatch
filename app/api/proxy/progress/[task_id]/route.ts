@@ -1,5 +1,7 @@
-export const runtime = 'nodejs';
-export const maxDuration = 300;
+export const runtime  = 'nodejs';
+export const maxDuration = 30;
+
+const decoder = new TextDecoder();
 
 export async function GET(
   _req: Request,
@@ -7,37 +9,34 @@ export async function GET(
 ) {
   const { task_id } = await params;
 
-  const aiRes = await fetch(
-    `${process.env.AI_SERVER_URL}/progress/${task_id}`
-  );
+  try {
+    // Connect to AI server SSE, read exactly ONE event, return it as plain JSON.
+    // This avoids SSE buffering issues through Cloudflare tunnels — the browser
+    // polls this endpoint every 800 ms instead of keeping a streaming connection.
+    const aiRes = await fetch(
+      `${process.env.AI_SERVER_URL}/progress/${task_id}`
+    );
 
-  // Explicitly pump each chunk so events are flushed to the browser immediately
-  // instead of being buffered by the Node.js response stream
-  const stream = new ReadableStream({
-    async start(controller) {
-      const reader = aiRes.body!.getReader();
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          controller.enqueue(value);
-        }
-      } catch (e) {
-        console.error('SSE PROXY ERROR:', e);
-      } finally {
-        controller.close();
+    const reader = aiRes.body!.getReader();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE events are "data: {...}\n\n"
+      const match = buffer.match(/data:\s*(.+)\n/);
+      if (match) {
+        reader.cancel(); // close upstream connection
+        const payload = JSON.parse(match[1]);
+        return Response.json(payload);
       }
-    },
-    cancel() {
-      // browser disconnected — nothing to clean up on this side
-    },
-  });
+    }
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type':      'text/event-stream',
-      'Cache-Control':     'no-cache',
-      'X-Accel-Buffering': 'no',
-    },
-  });
+    return Response.json({ status: 'error', error: 'No data from AI server' }, { status: 502 });
+  } catch (err: any) {
+    return Response.json({ status: 'error', error: err.message }, { status: 500 });
+  }
 }

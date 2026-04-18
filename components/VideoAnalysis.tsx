@@ -319,7 +319,7 @@ export default function VideoAnalysis() {
   const [error,        setError]        = useState<string | null>(null);
   const [currentFile,  setCurrentFile]  = useState('');
   const [deleting,     setDeleting]     = useState<string | null>(null);
-  const esRef                           = useRef<EventSource | null>(null);
+  const pollRef                         = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /* ---------- LOAD HISTORY ---------- */
   useEffect(() => {
@@ -334,7 +334,7 @@ export default function VideoAnalysis() {
       .finally(() => setLoadingList(false));
   }, []);
 
-  /* ---------- UPLOAD + SSE STREAM ---------- */
+  /* ---------- UPLOAD + POLL ---------- */
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -345,7 +345,9 @@ export default function VideoAnalysis() {
     setFrames({ done: 0, total: 0 });
     setError(null);
     setCurrentFile(file.name);
-    esRef.current?.close();
+
+    // clear any previous poll
+    if (pollRef.current) clearInterval(pollRef.current);
 
     try {
       const form = new FormData();
@@ -360,55 +362,51 @@ export default function VideoAnalysis() {
 
       setStatus('processing');
 
-      const es = new EventSource(`/api/proxy/progress/${task_id}`);
-      esRef.current = es;
+      // Poll every 800ms instead of SSE — works reliably through Cloudflare tunnel
+      pollRef.current = setInterval(async () => {
+        try {
+          const r    = await fetch(`/api/proxy/progress/${task_id}`);
+          const data = await r.json();
 
-      es.onmessage = async (ev) => {
-        const data = JSON.parse(ev.data);
+          setPercent(data.percent ?? 0);
+          if (data.potholes_found !== undefined) setPotholeCount(data.potholes_found);
+          if (data.progress     !== undefined)
+            setFrames({ done: data.progress, total: data.total_frames ?? 0 });
 
-        setPercent(data.percent ?? 0);
-        if (data.potholes_found !== undefined) setPotholeCount(data.potholes_found);
-        if (data.progress !== undefined)
-          setFrames({ done: data.progress, total: data.total_frames ?? 0 });
+          if (data.status === 'done') {
+            clearInterval(pollRef.current!);
 
-        if (data.status === 'done') {
-          es.close();
+            const result = data.result;
+            const saved  = await fetch('/api/video-analysis/save', {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                filename:       file.name,
+                total_frames:   result.total_frames_processed,
+                total_potholes: result.total_potholes_found,
+                potholes:       result.potholes,
+              }),
+            }).then((r) => r.json());
 
-          const result = data.result;
-          const saved  = await fetch('/api/video-analysis/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              filename:       file.name,
-              total_frames:   result.total_frames_processed,
-              total_potholes: result.total_potholes_found,
-              potholes:       result.potholes,
-            }),
-          }).then((r) => r.json());
-
-          if (saved?.id) {
-            setAnalyses((prev) => [saved, ...prev]);
-            setSelected(saved);
+            if (saved?.id) {
+              setAnalyses((prev) => [saved, ...prev]);
+              setSelected(saved);
+            }
+            setStatus('done');
           }
 
-          setStatus('done');
-        }
-
-        if (data.status === 'error') {
-          setError(data.error ?? 'Processing failed');
-          setStatus('error');
-          es.close();
-        }
-      };
-
-      es.onerror = () => {
-        setStatus((prev) => {
-          if (prev === 'done') return 'done'; // server closed connection after completion — ignore
+          if (data.status === 'error') {
+            clearInterval(pollRef.current!);
+            setError(data.error ?? 'Processing failed');
+            setStatus('error');
+          }
+        } catch {
+          clearInterval(pollRef.current!);
           setError('Lost connection to model server');
-          return 'error';
-        });
-        es.close();
-      };
+          setStatus('error');
+        }
+      }, 800);
+
     } catch (err: any) {
       setError(err.message);
       setStatus('error');
