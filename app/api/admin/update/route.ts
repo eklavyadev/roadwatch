@@ -20,30 +20,25 @@ export async function POST(req: Request) {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      const success = updateLocalReportStatus(id, status);
-      if (!success) {
-        return NextResponse.json(
-          { error: "Report not found" },
-          { status: 404 }
-        );
+      return handleLocalUpdate(id, status);
+    }
+
+    try {
+      const { error } = await supabase
+        .from("reports")
+        .update({ status })
+        .eq("id", id);
+
+      if (error) {
+        console.error("SUPABASE UPDATE ERROR, FALLING BACK TO LOCAL DB:", error);
+        return handleLocalUpdate(id, status);
       }
+
       return NextResponse.json({ success: true });
+    } catch (err: any) {
+      console.error("SUPABASE UPDATE FAILED, FALLING BACK TO LOCAL DB:", err);
+      return handleLocalUpdate(id, status);
     }
-
-    const { error } = await supabase
-      .from("reports")
-      .update({ status })
-      .eq("id", id);
-
-    if (error) {
-      console.error("SUPABASE UPDATE ERROR:", error);
-      return NextResponse.json(
-        { error: "Update failed" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("UPDATE ERROR:", error);
     return NextResponse.json(
@@ -52,4 +47,16 @@ export async function POST(req: Request) {
     );
   }
 }
+
+function handleLocalUpdate(id: string, status: any) {
+  const success = updateLocalReportStatus(id, status);
+  if (!success) {
+    return NextResponse.json(
+      { error: "Report not found" },
+      { status: 404 }
+    );
+  }
+  return NextResponse.json({ success: true });
+}
+
 

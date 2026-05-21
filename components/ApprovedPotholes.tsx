@@ -81,6 +81,18 @@ export function ApprovedReports() {
   });
 
   useEffect(() => {
+    // 1. Try to load from localStorage first for instant paint/offline support
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('roadwatch_cached_approved_reports');
+      if (cached) {
+        try {
+          setReports(JSON.parse(cached));
+          setLoading(false);
+        } catch {}
+      }
+    }
+
+    // 2. Fetch fresh data from the server
     fetch('/api/admin/reports')
       .then((res) => res.json())
       .then((data) => {
@@ -88,10 +100,17 @@ export function ApprovedReports() {
           (r: Report) => r.status === 'approved'
         );
         setReports(approved);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('roadwatch_cached_approved_reports', JSON.stringify(approved));
+        }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        console.warn('Failed to fetch fresh reports, using cached reports:', err);
+        setLoading(false);
+      });
   }, []);
+
 
   if (loading) {
     return <p className="text-gray-400 text-sm">Loading verified reports…</p>;

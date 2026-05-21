@@ -24,52 +24,50 @@ export async function DELETE(
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      const success = deleteLocalReport(id);
-      if (!success) {
-        return NextResponse.json(
-          { error: "Report not found" },
-          { status: 404 }
-        );
+      return handleLocalDelete(id);
+    }
+
+    try {
+      /* ---------- FETCH IMAGE URL ---------- */
+      const { data: report, error: fetchError } = await supabase
+        .from("reports")
+        .select("image_url")
+        .eq("id", id)
+        .single();
+
+      if (fetchError || !report) {
+        console.warn("Supabase report fetch failed, falling back to local DB deletion");
+        return handleLocalDelete(id);
       }
+
+      /* ---------- DELETE IMAGE ---------- */
+      if (report.image_url?.includes("/reports/")) {
+        const imagePath = report.image_url.split("/reports/")[1];
+        if (imagePath) {
+          try {
+            await supabase.storage.from("reports").remove([imagePath]);
+          } catch (e) {
+            console.error("Storage delete failed, continuing with DB deletion:", e);
+          }
+        }
+      }
+
+      /* ---------- DELETE ROW ---------- */
+      const { error: deleteError } = await supabase
+        .from("reports")
+        .delete()
+        .eq("id", id);
+
+      if (deleteError) {
+        console.error("Supabase row delete failed, falling back to local DB deletion:", deleteError);
+        return handleLocalDelete(id);
+      }
+
       return NextResponse.json({ success: true });
+    } catch (err: any) {
+      console.error("SUPABASE DELETE FAILED, FALLING BACK TO LOCAL DB:", err);
+      return handleLocalDelete(id);
     }
-
-    /* ---------- FETCH IMAGE URL ---------- */
-    const { data: report, error: fetchError } = await supabase
-      .from("reports")
-      .select("image_url")
-      .eq("id", id)
-      .single();
-
-    if (fetchError || !report) {
-      return NextResponse.json(
-        { error: "Report not found" },
-        { status: 404 }
-      );
-    }
-
-    /* ---------- DELETE IMAGE ---------- */
-    if (report.image_url?.includes("/reports/")) {
-      const imagePath = report.image_url.split("/reports/")[1];
-      if (imagePath) {
-        await supabase.storage.from("reports").remove([imagePath]);
-      }
-    }
-
-    /* ---------- DELETE ROW ---------- */
-    const { error: deleteError } = await supabase
-      .from("reports")
-      .delete()
-      .eq("id", id);
-
-    if (deleteError) {
-      return NextResponse.json(
-        { error: "Failed to delete report" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
   } catch (err) {
     console.error("DELETE ERROR:", err);
     return NextResponse.json(
@@ -78,4 +76,16 @@ export async function DELETE(
     );
   }
 }
+
+function handleLocalDelete(id: string) {
+  const success = deleteLocalReport(id);
+  if (!success) {
+    return NextResponse.json(
+      { error: "Report not found" },
+      { status: 404 }
+    );
+  }
+  return NextResponse.json({ success: true });
+}
+
 

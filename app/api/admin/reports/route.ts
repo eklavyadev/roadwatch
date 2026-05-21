@@ -10,16 +10,7 @@ const supabase = isSupabaseConfigured
 
 export async function GET() {
   if (!isSupabaseConfigured || !supabase) {
-    try {
-      const data = getLocalReports();
-      return NextResponse.json(data);
-    } catch (err: any) {
-      console.error("LOCAL DB ERROR:", err);
-      return NextResponse.json(
-        { message: "Local database error", detail: err.message },
-        { status: 500 }
-      );
-    }
+    return handleLocalFetch();
   }
 
   try {
@@ -31,19 +22,27 @@ export async function GET() {
 
     if (error) {
       console.error("SUPABASE ERROR:", error);
-      return NextResponse.json(
-        { message: "Database error", detail: error.message },
-        { status: 500 }
-      );
+      return handleLocalFetch();
     }
 
     return NextResponse.json(data);
   } catch (err: any) {
-    console.error("UNEXPECTED ERROR:", err);
+    console.error("SUPABASE QUERY FAILED, FALLING BACK TO LOCAL DB:", err);
+    return handleLocalFetch();
+  }
+}
+
+function handleLocalFetch() {
+  try {
+    const data = getLocalReports();
+    return NextResponse.json(data);
+  } catch (err: any) {
+    console.error("LOCAL DB ERROR:", err);
     return NextResponse.json(
-      { message: "Unexpected error", detail: err.message },
+      { message: "Local database error", detail: err.message },
       { status: 500 }
     );
   }
 }
+
 
