@@ -1,0 +1,112 @@
+[
+  {
+    "id": "seed_1",
+    "organisationName": "National Highways Authority of India (NHAI)",
+    "tenderRefNo": "2025_NHAI_259959_1",
+    "bidsReceived": 4,
+    "selectedBidder": "L&T Infrastructure Ltd.",
+    "contractValue": 2579891676,
+    "contractDate": "2025-03-10",
+    "category": "NH",
+    "year": 2025
+  },
+  {
+    "id": "seed_2",
+    "organisationName": "National Highways Authority of India (NHAI)",
+    "tenderRefNo": "2025_NHAI_260098_1",
+    "bidsReceived": 5,
+    "selectedBidder": "IRB Infrastructure Developers",
+    "contractValue": 2100793585,
+    "contractDate": "2025-08-27",
+    "category": "NH",
+    "year": 2025
+  },
+  {
+    "id": "seed_3",
+    "organisationName": "National Highways Authority of India (NHAI)",
+    "tenderRefNo": "2026_NHAI_256630_2",
+    "bidsReceived": 3,
+    "selectedBidder": "Tata Projects",
+    "contractValue": 322370906,
+    "contractDate": "2026-02-14",
+    "category": "NH",
+    "year": 2026
+  },
+  {
+    "id": "seed_4",
+    "organisationName": "Gujarat State Road Development Corporation (GSRDC)",
+    "tenderRefNo": "2025_GSRDC_123456_1",
+    "bidsReceived": 6,
+    "selectedBidder": "Dilip Buildcon Ltd.",
+    "contractValue": 1680000000,
+    "contractDate": "2025-11-20",
+    "category": "SH",
+    "year": 2025
+  },
+  {
+    "id": "seed_5",
+    "organisationName": "Maharashtra Public Works Department (MPWD)",
+    "tenderRefNo": "2026_MPWD_889922_1",
+    "bidsReceived": 8,
+    "selectedBidder": "Ashoka Buildcon Ltd.",
+    "contractValue": 742000000,
+    "contractDate": "2026-05-06",
+    "category": "SH",
+    "year": 2026
+  },
+  {
+    "id": "seed_6",
+    "organisationName": "National Highways Authority of India (NHAI)",
+    "tenderRefNo": "2025_NHAI_259367_1",
+    "bidsReceived": 5,
+    "selectedBidder": "IRB Infrastructure Developers",
+    "contractValue": 1980000000,
+    "contractDate": "2025-04-18",
+    "category": "NH",
+    "year": 2025
+  },
+  {
+    "id": "seed_7",
+    "organisationName": "Uttarakhand Public Works Department (UKPWD)",
+    "tenderRefNo": "2026_UKPWD_345211_1",
+    "bidsReceived": 4,
+    "selectedBidder": "PWD Class-A Registered Contractor",
+    "contractValue": 280000000,
+    "contractDate": "2026-02-05",
+    "category": "SH",
+    "year": 2026
+  },
+  {
+    "id": "seed_8",
+    "organisationName": "National Highways Authority of India (NHAI)",
+    "tenderRefNo": "2025_NHAI_259347_1",
+    "bidsReceived": 3,
+    "selectedBidder": "Tata Projects",
+    "contractValue": 5200000,
+    "contractDate": "2025-10-31",
+    "category": "NH",
+    "year": 2025
+  },
+  {
+    "id": "seed_9",
+    "organisationName": "Tamil Nadu Road Development Company (TNRDC)",
+    "tenderRefNo": "2026_TNRDC_554433_1",
+    "bidsReceived": 6,
+    "selectedBidder": "GMR Infrastructure",
+    "contractValue": 685000000,
+    "contractDate": "2026-01-20",
+    "category": "SH",
+    "year": 2026
+  },
+  {
+    "id": "seed_10",
+    "organisationName": "Maharashtra State Road Development Corporation (MSRDC)",
+    "tenderRefNo": "2025_MSRDC_776655_1",
+    "bidsReceived": 7,
+    "selectedBidder": "IRB Infrastructure Developers",
+    "contractValue": 154000000,
+    "contractDate": "2025-12-15",
+    "category": "SH",
+    "year": 2025
+  }
+]
