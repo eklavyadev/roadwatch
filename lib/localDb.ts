@@ -1,0 +1,107 @@
+import fs from 'fs';
+import path from 'path';
+
+export type LocalReport = {
+  id: string;
+  image_url: string;
+  location: string;
+  lat: number;
+  lng: number;
+  type: 'pothole' | 'streetlight' | 'traffic_signal' | 'open_drainage';
+  impact_level: number;
+  governing_body: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+};
+
+const DB_FILE = path.join(process.cwd(), 'db_store.json');
+const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
+
+// Ensure db and upload folders exist
+function initializeDb() {
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(DB_FILE)) {
+    fs.writeFileSync(DB_FILE, JSON.stringify([], null, 2));
+  }
+}
+
+export function getLocalReports(): LocalReport[] {
+  initializeDb();
+  try {
+    const data = fs.readFileSync(DB_FILE, 'utf8');
+    return JSON.parse(data) as LocalReport[];
+  } catch (error) {
+    console.error('Error reading local DB:', error);
+    return [];
+  }
+}
+
+export function saveLocalReports(reports: LocalReport[]) {
+  initializeDb();
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(reports, null, 2));
+  } catch (error) {
+    console.error('Error writing local DB:', error);
+  }
+}
+
+export async function createLocalReport(reportData: Omit<LocalReport, 'id' | 'created_at' | 'status'>): Promise<LocalReport> {
+  const reports = getLocalReports();
+  const newReport: LocalReport = {
+    ...reportData,
+    id: crypto.randomUUID ? crypto.randomUUID() : `rep-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+  };
+  reports.unshift(newReport);
+  saveLocalReports(reports);
+  return newReport;
+}
+
+export function updateLocalReportStatus(id: string, status: LocalReport['status']): boolean {
+  const reports = getLocalReports();
+  const index = reports.findIndex((r) => r.id === id);
+  if (index === -1) return false;
+  reports[index].status = status;
+  saveLocalReports(reports);
+  return true;
+}
+
+export function deleteLocalReport(id: string): boolean {
+  const reports = getLocalReports();
+  const index = reports.findIndex((r) => r.id === id);
+  if (index === -1) return false;
+
+  const report = reports[index];
+  // Remove associated local image file if it exists
+  if (report.image_url.startsWith('/uploads/')) {
+    const fileName = report.image_url.split('/uploads/')[1];
+    if (fileName) {
+      const filePath = path.join(UPLOADS_DIR, fileName);
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (e) {
+          console.error('Failed to delete local image file:', e);
+        }
+      }
+    }
+  }
+
+  reports.splice(index, 1);
+  saveLocalReports(reports);
+  return true;
+}
+
+export async function saveLocalImage(imageFile: File): Promise<string> {
+  initializeDb();
+  const buffer = Buffer.from(await imageFile.arrayBuffer());
+  const ext = imageFile.name.split('.').pop() || 'jpg';
+  const fileName = `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${ext}`;
+  const filePath = path.join(UPLOADS_DIR, fileName);
+
+  fs.writeFileSync(filePath, buffer);
+  return `/uploads/${fileName}`;
+}

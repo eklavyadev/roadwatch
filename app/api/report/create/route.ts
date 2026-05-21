@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createLocalReport, getLocalReports, saveLocalImage } from '@/lib/localDb';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const isSupabaseConfigured = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+const supabase = isSupabaseConfigured
+  ? createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  : null;
 
 const MAX_SIZE_MB = 10;
 const DUPLICATE_RADIUS_METERS = 50;
@@ -59,6 +61,61 @@ export async function POST(req: Request) {
       );
     }
 
+    /* ---------- LOCAL FALLBACK EXECUTION ---------- */
+    if (!isSupabaseConfigured || !supabase) {
+      // 1. Simple local duplicate check (50 meters ~ 0.00045 deg)
+      const localReports = getLocalReports();
+      const isDuplicate = localReports.some((r) => {
+        const dLat = r.lat - lat;
+        const dLng = r.lng - lng;
+        const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+        return dist < 0.00045; // roughly 50 meters
+      });
+
+      if (isDuplicate) {
+        return NextResponse.json(
+          {
+            error:
+              'A similar issue has already been reported nearby. Please check the map for existing reports.',
+          },
+          { status: 409 }
+        );
+      }
+
+      // 2. Save Image locally on disk
+      const imageUrl = await saveLocalImage(image);
+
+      // 3. Create Report in local database
+      const inserted = await createLocalReport({
+        image_url: imageUrl,
+        location,
+        lat,
+        lng,
+        type: type as any,
+        impact_level: impactLevel,
+        governing_body: 'Municipal',
+      });
+
+      // 4. Trigger AI Service if configured
+      if (process.env.AI_SERVER_URL) {
+        fetch(`${process.env.AI_SERVER_URL}/check`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reportId: inserted.id,
+            imageUrl: imageUrl,
+            type,
+            impact_level: impactLevel,
+          }),
+        }).catch((err) => {
+          console.error('AI TRIGGER FAILED:', err);
+        });
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    /* ---------- SUPABASE EXECUTION ---------- */
     /* ---------- DUPLICATE CHECK (200m) ---------- */
     const { data: nearbyReports, error: duplicateError } =
       await supabase.rpc('check_nearby_reports', {
@@ -154,3 +211,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

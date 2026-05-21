@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { deleteLocalReport, getLocalReports } from "@/lib/localDb";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const isSupabaseConfigured = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+const supabase = isSupabaseConfigured
+  ? createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  : null;
 
 export async function DELETE(
   req: Request,
@@ -19,6 +21,17 @@ export async function DELETE(
         { error: "Invalid report id" },
         { status: 400 }
       );
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      const success = deleteLocalReport(id);
+      if (!success) {
+        return NextResponse.json(
+          { error: "Report not found" },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json({ success: true });
     }
 
     /* ---------- FETCH IMAGE URL ---------- */
@@ -65,3 +78,4 @@ export async function DELETE(
     );
   }
 }
+

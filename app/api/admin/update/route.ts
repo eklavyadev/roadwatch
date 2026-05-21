@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { updateLocalReportStatus } from "@/lib/localDb";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const isSupabaseConfigured = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+const supabase = isSupabaseConfigured
+  ? createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  : null;
 
 export async function POST(req: Request) {
   try {
@@ -15,6 +17,17 @@ export async function POST(req: Request) {
         { error: "Missing id or status" },
         { status: 400 }
       );
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      const success = updateLocalReportStatus(id, status);
+      if (!success) {
+        return NextResponse.json(
+          { error: "Report not found" },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json({ success: true });
     }
 
     const { error } = await supabase
@@ -39,3 +52,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

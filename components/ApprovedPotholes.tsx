@@ -6,6 +6,7 @@ import {
   Marker,
   useLoadScript,
 } from '@react-google-maps/api';
+import { getTransparencyDetails } from '@/lib/transparencyEngine';
 
 type Report = {
   id: string;
@@ -116,6 +117,7 @@ export function ApprovedReports() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {visibleReports.map((r) => {
             const level = Number(r.impact_level);
+            const details = getTransparencyDetails(r.lat, r.lng, r.id, level);
 
             return (
               <div
@@ -123,16 +125,31 @@ export function ApprovedReports() {
                 onClick={() => setSelectedReport(r)}
                 className="cursor-pointer bg-[#0f172a] border border-slate-700 rounded overflow-hidden hover:border-cyan-400 transition"
               >
-                <div className="bg-black">
+                <div className="bg-black relative">
                   <img
                     src={r.image_url}
                     alt={r.type}
                     className="h-48 w-full object-cover"
                   />
+                  {/* Floating Transparency Audit Score Badge */}
+                  <div className="absolute top-2 right-2">
+                    <span className={`px-2 py-1 rounded text-xs font-bold shadow-md border ${
+                      details.transparencyScore >= 80 ? 'bg-[#0f172a] text-cyan-400 border-cyan-500/30' :
+                      details.transparencyScore >= 50 ? 'bg-[#0f172a] text-yellow-400 border-yellow-500/30' :
+                      'bg-[#0f172a] text-red-400 border-red-500/30'
+                    }`}>
+                      Audit: {details.transparencyScore}/100
+                    </span>
+                  </div>
                 </div>
 
                 <div className="p-4 space-y-2 text-sm text-slate-300">
-                  <p className="text-white font-semibold">{r.location}</p>
+                  <p className="text-white font-semibold line-clamp-1">{r.location}</p>
+
+                  <div className="flex justify-between items-center text-xs text-slate-400">
+                    <span>Road: {details.roadName}</span>
+                    <span className="font-mono text-cyan-500/80">{details.currencySymbol}{details.amountSpent.toLocaleString()} spent</span>
+                  </div>
 
                   <p>
                     <span className="text-white font-medium">Issue Type:</span>{' '}
@@ -230,69 +247,184 @@ export function ApprovedReports() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[90vh] overflow-y-auto">
 
         {/* ---------- LEFT : DETAILS ---------- */}
-        <div className="p-6 space-y-4">
+        {(() => {
+          const details = getTransparencyDetails(
+            selectedReport.lat,
+            selectedReport.lng,
+            selectedReport.id,
+            selectedReport.impact_level
+          );
 
-          {/* Image */}
-          <img
-            src={selectedReport.image_url}
-            alt={selectedReport.type}
-            className="rounded w-full h-64 sm:h-72 object-cover"
-          />
+          // Create mailto link
+          const complaintSubject = encodeURIComponent(`[RoadWatch] Road Quality Issue Reported - ${details.roadName}`);
+          const complaintBody = encodeURIComponent(
+            `Dear ${details.executiveEngineer},\n\n` +
+            `I am writing to report a verified infrastructure issue via the RoadWatch Transparency Portal.\n\n` +
+            `Location: ${selectedReport.location}\n` +
+            `Coordinates: ${selectedReport.lat.toFixed(5)}, ${selectedReport.lng.toFixed(5)}\n` +
+            `Issue Type: ${TYPE_LABEL[selectedReport.type]}\n` +
+            `Impact Level: ${IMPACT_LABEL[selectedReport.impact_level]}\n` +
+            `Reported on: ${new Date(selectedReport.created_at).toLocaleDateString()}\n\n` +
+            `--- PUBLIC SPENDING AUDIT DETAILS ---\n` +
+            `As per public records (Source: ${details.spendingSource}):\n` +
+            `- Road Name: ${details.roadName} (${details.roadType})\n` +
+            `- Contractor: ${details.contractorName}\n` +
+            `- Last Relayed: ${details.lastRelayingDate}\n` +
+            `- Sanctioned Budget: ${details.currencySymbol}${details.amountSanctioned.toLocaleString()} ${details.currencyCode}\n` +
+            `- Total Disbursed: ${details.currencySymbol}${details.amountSpent.toLocaleString()} ${details.currencyCode}\n` +
+            `- Calculated Transparency Index Score: ${details.transparencyScore}/100\n\n` +
+            `The presence of severe road defects shortly after high public fund spending warrants immediate engineering inspection, accountability audit, and rectification.\n\n` +
+            `Sincerely,\n` +
+            `Concerned Citizen (Via RoadWatch Gateway)`
+          );
+          const mailtoUrl = `mailto:${details.engineerEmail}?subject=${complaintSubject}&body=${complaintBody}`;
 
-          {/* Location */}
-          <p className="text-white font-semibold text-lg">
-            {selectedReport.location}
-          </p>
+          return (
+            <div className="p-6 space-y-5">
+              {/* Image */}
+              <div className="relative">
+                <img
+                  src={selectedReport.image_url}
+                  alt={selectedReport.type}
+                  className="rounded w-full h-64 sm:h-72 object-cover border border-slate-700/50"
+                />
+                <div className="absolute top-3 right-3">
+                  <span className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-lg border backdrop-blur-md ${
+                    details.transparencyScore >= 80 ? 'bg-[#0f172a]/95 text-cyan-400 border-cyan-500/30' :
+                    details.transparencyScore >= 50 ? 'bg-[#0f172a]/95 text-yellow-400 border-yellow-500/30' :
+                    'bg-[#0f172a]/95 text-red-400 border-red-500/30'
+                  }`}>
+                    Transparency Index: {details.transparencyScore}/100
+                  </span>
+                </div>
+              </div>
 
-          {/* Issue Type */}
-          <p className="text-sm text-slate-300">
-            <span className="text-white font-medium">Issue Type:</span>{' '}
-            {TYPE_LABEL[selectedReport.type]}
-          </p>
+              {/* Basic Issue Card */}
+              <div className="bg-[#0f172a]/45 border border-slate-800 rounded-lg p-4 space-y-2">
+                <p className="text-white font-semibold text-lg line-clamp-2">
+                  {selectedReport.location}
+                </p>
 
-          {/* Coordinates */}
-          <p className="text-sm text-slate-300">
-            <span className="text-white font-medium">Coordinates:</span>{' '}
-            {selectedReport.lat.toFixed(5)}, {selectedReport.lng.toFixed(5)}
-          </p>
+                <div className="grid grid-cols-2 gap-2 text-sm text-slate-300">
+                  <p>
+                    <span className="text-slate-400 font-medium">Issue Type:</span>{' '}
+                    <span className="text-white font-semibold">{TYPE_LABEL[selectedReport.type]}</span>
+                  </p>
+                  <p>
+                    <span className="text-slate-400 font-medium">Impact Level:</span>{' '}
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                        IMPACT_BADGE_CLASS[selectedReport.impact_level]
+                      }`}
+                    >
+                      {IMPACT_LABEL[selectedReport.impact_level]}
+                    </span>
+                  </p>
+                </div>
 
-          {/* Impact Level */}
-          <p className="text-sm text-slate-300">
-            <span className="text-white font-medium">Impact Level:</span>{' '}
-            <span
-              className={`px-2 py-1 rounded text-xs font-semibold ${
-                IMPACT_BADGE_CLASS[selectedReport.impact_level]
-              }`}
-            >
-              {IMPACT_LABEL[selectedReport.impact_level]}
-            </span>
-          </p>
+                <p className="text-xs text-slate-400 italic bg-[#020817]/40 p-2 rounded border border-slate-800/40">
+                  {IMPACT_DESCRIPTION[selectedReport.type][selectedReport.impact_level]}
+                </p>
 
-          {/* Description */}
-          <p className="text-sm text-slate-400 leading-relaxed">
-            {
-              IMPACT_DESCRIPTION[selectedReport.type][
-                selectedReport.impact_level
-              ]
-            }
-          </p>
+                <div className="flex justify-between items-center text-xs text-slate-500 pt-1">
+                  <span>Reported: {new Date(selectedReport.created_at).toLocaleDateString()}</span>
+                  <span>Coordinates: {selectedReport.lat.toFixed(5)}, {selectedReport.lng.toFixed(5)}</span>
+                </div>
+              </div>
 
-          {/* Date */}
-          <p className="text-xs text-slate-400">
-            Reported on:{' '}
-            {new Date(selectedReport.created_at).toLocaleDateString()}
-          </p>
+              {/* Public Spending & Transparency Portal */}
+              <div className="bg-[#0f172a]/80 border border-cyan-500/15 rounded-lg p-4 space-y-3">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                  <h3 className="text-cyan-400 font-semibold text-sm tracking-wider uppercase flex items-center gap-1.5">
+                    🪙 Public Spending Audit
+                  </h3>
+                  <span className="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full">
+                    {details.country} Standards
+                  </span>
+                </div>
 
-          {/* Google Maps link (KEPT) */}
-          <a
-            href={`https://www.google.com/maps?q=${selectedReport.lat},${selectedReport.lng}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-cyan-400 text-sm underline inline-block"
-          >
-            View on Google Maps
-          </a>
-        </div>
+                {/* Audit Warnings */}
+                {details.auditFlags.length > 0 && (
+                  <div className="space-y-1.5">
+                    {details.auditFlags.map((flag, idx) => (
+                      <div key={idx} className="bg-red-500/10 border border-red-500/25 rounded p-2 text-xs text-red-400 flex items-start gap-1">
+                        <span>⚠️</span>
+                        <span>{flag}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3 text-xs border-b border-slate-800/40 pb-3">
+                  <div>
+                    <span className="text-slate-400 block mb-0.5">Asset / Road Section</span>
+                    <span className="text-white font-medium block">{details.roadName}</span>
+                    <span className="text-[10px] text-slate-400 font-mono block">{details.roadType}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block mb-0.5">Prime Contractor</span>
+                    <span className="text-white font-medium block">{details.contractorName}</span>
+                    <span className="text-[10px] text-slate-400 block">Relayed: {details.lastRelayingDate}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs border-b border-slate-800/40 pb-3">
+                  <div>
+                    <span className="text-slate-400 block mb-0.5">Sanctioned Budget</span>
+                    <span className="text-white font-bold block text-sm">
+                      {details.currencySymbol}{details.amountSanctioned.toLocaleString()}
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-mono block">{details.currencyCode} Allocation</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block mb-0.5">Spent / Disbursed</span>
+                    <span className="text-white font-bold block text-sm flex items-center gap-1">
+                      {details.currencySymbol}{details.amountSpent.toLocaleString()}
+                      {details.amountSpent > details.amountSanctioned && (
+                        <span className="text-[10px] text-red-400 font-normal">(Overrun)</span>
+                      )}
+                    </span>
+                    <span className="text-[9px] text-slate-400 block font-mono">Source: OpenSpending Ledger</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 text-xs pt-1">
+                  <div>
+                    <span className="text-slate-400 block mb-0.5">Governing Authority</span>
+                    <span className="text-white font-semibold block">{details.authorityBody}</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#020817]/60 p-2.5 rounded border border-slate-800">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Supervising Engineer</span>
+                      <span className="text-white font-medium block">{details.executiveEngineer}</span>
+                      <span className="text-[10px] text-slate-400 font-mono block">{details.engineerEmail}</span>
+                    </div>
+                    <a
+                      href={mailtoUrl}
+                      className="bg-cyan-500 hover:bg-cyan-400 text-black px-3 py-1.5 rounded font-bold text-[10px] tracking-wide transition flex items-center gap-1 shadow-md"
+                    >
+                      ✉️ Route Complaint
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* External Links */}
+              <div className="flex gap-4 pt-1">
+                <a
+                  href={`https://www.google.com/maps?q=${selectedReport.lat},${selectedReport.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cyan-400 text-xs hover:text-cyan-300 underline inline-block"
+                >
+                  📍 View on Google Maps
+                </a>
+                <span className="text-slate-700">|</span>
+                <span className="text-slate-500 text-xs font-mono">ID: {selectedReport.id.substring(0, 8)}...</span>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ---------- RIGHT : MAP ---------- */}
         {isLoaded && (
