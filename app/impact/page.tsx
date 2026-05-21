@@ -17,16 +17,16 @@ type Report = {
   status: string;
 };
 
-// Seed dataset representing global municipal public audits (India, US, UK)
+// Seed dataset representing municipal public audits across major Indian cities
 const SIMULATED_AUDITS = [
   { lat: 13.0827, lng: 80.2707, id: 'sim-1', impact_level: 3, created_at: new Date(Date.now() - 5 * 24 * 3600000).toISOString(), location: 'GST Road, Chennai, Tamil Nadu' },
   { lat: 12.9716, lng: 77.5946, id: 'sim-2', impact_level: 2, created_at: new Date(Date.now() - 12 * 24 * 3600000).toISOString(), location: 'OMR Expressway, Bengaluru, Karnataka' },
-  { lat: 37.7749, lng: -122.4194, id: 'sim-3', impact_level: 3, created_at: new Date(Date.now() - 3 * 24 * 3600000).toISOString(), location: 'Broadway Ave, San Francisco, CA' },
-  { lat: 40.7128, lng: -74.0060, id: 'sim-4', impact_level: 1, created_at: new Date(Date.now() - 25 * 24 * 3600000).toISOString(), location: 'Sunset Blvd, New York, NY' },
-  { lat: 51.5074, lng: -0.1278, id: 'sim-5', impact_level: 3, created_at: new Date(Date.now() - 1 * 24 * 3600000).toISOString(), location: 'M4 Motorway near Heathrow, London' },
-  { lat: 52.4862, lng: -1.8904, id: 'sim-6', impact_level: 2, created_at: new Date(Date.now() - 18 * 24 * 3600000).toISOString(), location: 'High Street, Birmingham, UK' },
-  { lat: 19.0760, lng: 72.8777, id: 'sim-7', impact_level: 3, created_at: new Date(Date.now() - 8 * 24 * 3600000).toISOString(), location: 'NH-44 Bypass near Bandra, Mumbai' },
-  { lat: 34.0522, lng: -118.2437, id: 'sim-8', impact_level: 2, created_at: new Date(Date.now() - 14 * 24 * 3600000).toISOString(), location: 'Sunset Blvd, Los Angeles, CA' },
+  { lat: 28.6139, lng: 77.2090, id: 'sim-3', impact_level: 3, created_at: new Date(Date.now() - 3 * 24 * 3600000).toISOString(), location: 'MG Road, Connaught Place, New Delhi' },
+  { lat: 17.3850, lng: 78.4867, id: 'sim-4', impact_level: 2, created_at: new Date(Date.now() - 15 * 24 * 3600000).toISOString(), location: 'NH-65 Bypass, Hyderabad, Telangana' },
+  { lat: 22.5726, lng: 88.3639, id: 'sim-5', impact_level: 3, created_at: new Date(Date.now() - 1 * 24 * 3600000).toISOString(), location: 'Bidhan Sarani, Kolkata, West Bengal' },
+  { lat: 18.5204, lng: 73.8567, id: 'sim-6', impact_level: 2, created_at: new Date(Date.now() - 18 * 24 * 3600000).toISOString(), location: 'Senapati Bapat Road, Pune, Maharashtra' },
+  { lat: 19.0760, lng: 72.8777, id: 'sim-7', impact_level: 3, created_at: new Date(Date.now() - 8 * 24 * 3600000).toISOString(), location: 'NH-44 Bypass near Bandra, Mumbai, Maharashtra' },
+  { lat: 23.0225, lng: 72.5714, id: 'sim-8', impact_level: 2, created_at: new Date(Date.now() - 14 * 24 * 3600000).toISOString(), location: 'Ashram Road near Sabarmati, Ahmedabad, Gujarat' },
 ];
 
 export default function ImpactPage() {
@@ -43,7 +43,11 @@ export default function ImpactPage() {
         try {
           const approved = JSON.parse(cached);
           setReports(approved);
-          if (approved.length > 0) {
+          const liveIndianCount = approved.filter((r: Report) => {
+            const details = getTransparencyDetails(r.lat, r.lng, r.id, r.impact_level);
+            return details.country === 'India';
+          }).length;
+          if (liveIndianCount > 0) {
             setDataSource('live');
           }
           setLoading(false);
@@ -60,8 +64,12 @@ export default function ImpactPage() {
         if (typeof window !== 'undefined') {
           localStorage.setItem('roadwatch_cached_approved_reports', JSON.stringify(approved));
         }
-        // Automatically default to live if there are approved reports present
-        if (approved.length > 0) {
+        const liveIndianCount = approved.filter((r: Report) => {
+          const details = getTransparencyDetails(r.lat, r.lng, r.id, r.impact_level);
+          return details.country === 'India';
+        }).length;
+        // Automatically default to live if there are approved reports present in India
+        if (liveIndianCount > 0) {
           setDataSource('live');
         }
         setLoading(false);
@@ -72,16 +80,17 @@ export default function ImpactPage() {
   }, []);
 
 
-  const activeReports = dataSource === 'live' ? reports : SIMULATED_AUDITS as unknown as Report[];
+  const liveIndianReports = reports.filter((r) => {
+    const details = getTransparencyDetails(r.lat, r.lng, r.id, r.impact_level);
+    return details.country === 'India';
+  });
+
+  const activeReports = dataSource === 'live' ? liveIndianReports : SIMULATED_AUDITS as unknown as Report[];
 
   // Compile audit metrics
   let totalAuditedProjects = activeReports.length;
   let totalSanctionedINR = 0;
   let totalSpentINR = 0;
-  let totalSanctionedUSD = 0;
-  let totalSpentUSD = 0;
-  let totalSanctionedGBP = 0;
-  let totalSpentGBP = 0;
   let accumulatedTransparencyScore = 0;
   let criticalFlagsCount = 0;
 
@@ -111,12 +120,6 @@ export default function ImpactPage() {
     if (details.currencyCode === 'INR') {
       totalSanctionedINR += details.amountSanctioned;
       totalSpentINR += details.amountSpent;
-    } else if (details.currencyCode === 'USD') {
-      totalSanctionedUSD += details.amountSanctioned;
-      totalSpentUSD += details.amountSpent;
-    } else {
-      totalSanctionedGBP += details.amountSanctioned;
-      totalSpentGBP += details.amountSpent;
     }
 
     accumulatedTransparencyScore += details.transparencyScore;
@@ -189,21 +192,21 @@ export default function ImpactPage() {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                🌐 Global Reference Ledger ({SIMULATED_AUDITS.length})
+                🇮🇳 National Reference Ledger ({SIMULATED_AUDITS.length})
               </button>
               <button
                 onClick={() => setDataSource('live')}
-                disabled={reports.length === 0}
+                disabled={liveIndianReports.length === 0}
                 className={`px-4 py-2 rounded text-xs font-bold tracking-wide uppercase transition flex items-center gap-1.5 ${
                   dataSource === 'live'
                     ? 'bg-cyan-500 text-black shadow-md'
-                    : reports.length === 0
+                    : liveIndianReports.length === 0
                       ? 'text-slate-600 cursor-not-allowed'
                       : 'text-slate-400 hover:text-white'
                 }`}
               >
-                🔴 Live Verified Audits ({reports.length})
-                {reports.length > 0 && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />}
+                🔴 Live Indian Audits ({liveIndianReports.length})
+                {liveIndianReports.length > 0 && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />}
               </button>
             </div>
           </div>
@@ -221,19 +224,12 @@ export default function ImpactPage() {
             <StatCard
               title="Total Audited Spend"
               value={
-                totalSpentINR > 0
-                  ? `₹${Math.round(totalSpentINR / 100000) / 10}L`
-                  : totalSpentUSD > 0
-                    ? `$${totalSpentUSD.toLocaleString()}`
-                    : `£${totalSpentGBP.toLocaleString()}`
+                totalSpentINR >= 10000000
+                  ? `₹${(totalSpentINR / 10000000).toFixed(2)} Cr`
+                  : `₹${(totalSpentINR / 100000).toFixed(1)}L`
               }
               desc="Total disbursed capital reviewed in current ledger"
               icon="🪙"
-              sub={
-                totalSpentINR > 0 && totalSpentUSD > 0
-                  ? `+ $${totalSpentUSD.toLocaleString()} US / £${totalSpentGBP.toLocaleString()} UK`
-                  : undefined
-              }
             />
 
             <StatCard
@@ -309,7 +305,7 @@ export default function ImpactPage() {
             <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
               <div className="border-b border-slate-800 pb-3">
                 <h3 className="font-semibold text-lg text-white">System Risk Index</h3>
-                <p className="text-slate-400 text-xs mt-0.5">Global distribution of road defects & spending anomalies</p>
+                <p className="text-slate-400 text-xs mt-0.5">National distribution of road defects & spending anomalies</p>
               </div>
 
               <div className="py-6 flex flex-col items-center justify-center space-y-4">
