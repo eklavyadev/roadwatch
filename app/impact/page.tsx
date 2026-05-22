@@ -136,7 +136,7 @@ export default function ImpactPage() {
                 </button>
               </div>
 
-              {/* Year Filter Dropdown: 2025, 2026 */}
+              {/* Year Filter Dropdown: 2021-2026 */}
               <div className="md:col-span-2 relative">
                 <select
                   value={selectedYear}
@@ -144,8 +144,12 @@ export default function ImpactPage() {
                   className="w-full bg-[#020817] border border-slate-800 text-xs font-bold uppercase tracking-wider py-3 px-4 rounded-lg focus:outline-none focus:border-cyan-500 text-slate-300 appearance-none cursor-pointer"
                 >
                   <option value="all">All Years</option>
-                  <option value="2025">Year 2025</option>
                   <option value="2026">Year 2026</option>
+                  <option value="2025">Year 2025</option>
+                  <option value="2024">Year 2024</option>
+                  <option value="2023">Year 2023</option>
+                  <option value="2022">Year 2022</option>
+                  <option value="2021">Year 2021</option>
                 </select>
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-500 text-xs">
                   ▼
