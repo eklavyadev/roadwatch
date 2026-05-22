@@ -22,6 +22,42 @@ export interface ContractRecord {
   year: number;
   selectedBidderAddress?: string;
   completionPeriod?: string;
+  state: string;
+}
+
+const STATES_LIST = [
+  'Uttar Pradesh', 'Maharashtra', 'Tamil Nadu', 'Punjab', 'Rajasthan',
+  'Odisha', 'Assam', 'Kerala', 'Haryana', 'Jharkhand', 'Tripura', 'Goa',
+  'Sikkim', 'Mizoram', 'Bihar', 'West Bengal', 'Karnataka', 'Gujarat',
+  'Madhya Pradesh', 'Andhra Pradesh', 'Telangana', 'Chhattisgarh',
+  'Uttarakhand', 'Himachal Pradesh', 'Arunachal Pradesh', 'Nagaland',
+  'Manipur', 'Meghalaya'
+];
+
+function classifyState(orgName: string, refNo: string, description: string, bidderAddress: string): string {
+  const combinedText = `${orgName} ${refNo} ${description} ${bidderAddress}`.toLowerCase();
+  
+  for (const state of STATES_LIST) {
+    if (combinedText.includes(state.toLowerCase())) {
+      return state;
+    }
+  }
+  
+  // Specific mappings for RO (Regional Office) names if no state match in description
+  if (combinedText.includes('ro-nagpur') || combinedText.includes('ro-mumbai') || combinedText.includes('panvel')) return 'Maharashtra';
+  if (combinedText.includes('ro-chennai') || combinedText.includes('ro-madurai') || combinedText.includes('thanjavur')) return 'Tamil Nadu';
+  if (combinedText.includes('ro-chandigarh') || combinedText.includes('jalandhar')) return 'Punjab';
+  if (combinedText.includes('ro-lucknow') || combinedText.includes('ro-varanasi')) return 'Uttar Pradesh';
+  if (combinedText.includes('ro-gandhinagar') || combinedText.includes('bharuch') || combinedText.includes('rajkot')) return 'Gujarat';
+  if (combinedText.includes('ro-jaipur')) return 'Rajasthan';
+  if (combinedText.includes('ro-hyderabad')) return 'Telangana';
+  if (combinedText.includes('ro-bhopal') || combinedText.includes('jabalpur')) return 'Madhya Pradesh';
+  if (combinedText.includes('ro-bangalore') || combinedText.includes('hassan')) return 'Karnataka';
+  if (combinedText.includes('ro-vijayawada')) return 'Andhra Pradesh';
+  if (combinedText.includes('ro-dehradun')) return 'Uttarakhand';
+  if (combinedText.includes('ro-raipur')) return 'Chhattisgarh';
+  
+  return 'Other';
 }
 
 /**
@@ -85,12 +121,13 @@ function parseAndStoreRealTenders(force = false): ContractRecord[] {
 
           let category: "NH" | "SH" = 'SH';
           const searchStr = `${orgName} ${refNo} ${description}`.toUpperCase();
-          if (
-            searchStr.includes('NHAI') ||
-            searchStr.includes('NATIONAL HIGHWAY') ||
-            /\bNH[- ]?\d+/i.test(searchStr)
-          ) {
+          const isNHAI = searchStr.includes('NHAI') || searchStr.includes('NATIONAL HIGHWAY') || /\bNH[- ]?\d+/i.test(searchStr);
+          const hasSHKeywords = /\bSH[- ]?\d+/i.test(searchStr) || searchStr.includes('STATE HIGHWAY') || searchStr.includes('STATEROAD');
+          
+          if (isNHAI && !hasSHKeywords) {
             category = 'NH';
+          } else {
+            category = 'SH';
           }
 
           const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
@@ -112,7 +149,8 @@ function parseAndStoreRealTenders(force = false): ContractRecord[] {
               category: category,
               year: year,
               selectedBidderAddress: address,
-              completionPeriod: completion
+              completionPeriod: completion,
+              state: classifyState(orgName, refNo, description, address)
             });
           }
         });
@@ -143,7 +181,17 @@ function parseAndStoreRealTenders(force = false): ContractRecord[] {
           const address = cleanText(item.selected_bidder_address || '');
           const completion = cleanText(item.completion_period_days || '');
           const year = parseInt(item.scraped_year || '2025', 10);
-          const category: "NH" | "SH" = 'NH';
+          
+          let category: "NH" | "SH" = 'SH';
+          const searchStr = `${orgName} ${refNo} ${description}`.toUpperCase();
+          const isNHAI = searchStr.includes('NHAI') || searchStr.includes('NATIONAL HIGHWAY') || /\bNH[- ]?\d+/i.test(searchStr);
+          const hasSHKeywords = /\bSH[- ]?\d+/i.test(searchStr) || searchStr.includes('STATE HIGHWAY') || searchStr.includes('STATEROAD');
+          
+          if (isNHAI && !hasSHKeywords) {
+            category = 'NH';
+          } else {
+            category = 'SH';
+          }
 
           const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
 
@@ -164,7 +212,8 @@ function parseAndStoreRealTenders(force = false): ContractRecord[] {
               category: category,
               year: year,
               selectedBidderAddress: address,
-              completionPeriod: completion
+              completionPeriod: completion,
+              state: classifyState(orgName, refNo, description, address)
             });
           }
         });
@@ -187,7 +236,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const seed = searchParams.get("seed") === "true";
   const categoryFilter = searchParams.get("category"); // "NH" or "SH" or "all"
-  const yearFilter = searchParams.get("year"); // "2025" or "2026" or "all"
+  const yearFilter = searchParams.get("year"); // "2021" to "2026" or "all"
+  const stateFilter = searchParams.get("state"); // State name or "all"
   const searchQuery = searchParams.get("search")?.toLowerCase().trim() || "";
 
   try {
@@ -202,6 +252,11 @@ export async function GET(request: NextRequest) {
     // Filter by NH or SH Category
     if (categoryFilter && categoryFilter !== "all") {
       filtered = filtered.filter(c => c.category === categoryFilter);
+    }
+
+    // Filter by State ONLY when selected category is State Highways (SH)
+    if (categoryFilter === "SH" && stateFilter && stateFilter !== "all") {
+      filtered = filtered.filter(c => c.state === stateFilter);
     }
 
     // Filter by Year
@@ -243,7 +298,6 @@ export async function GET(request: NextRequest) {
     filtered.forEach((c) => {
       totalSpend += c.contractValue;
       if (c.selectedBidder) {
-        // Multi-bidder string splits
         c.selectedBidder.split(",").forEach(b => {
           const trimmed = b.trim();
           if (trimmed) activeBiddersSet.add(trimmed);
