@@ -7,24 +7,32 @@ export interface ContractRecord {
   id: string;
   organisationName: string;
   tenderRefNo: string;
+  tenderDescription: string;
+  tenderDocument: string;
+  tenderType: string;
   bidsReceived: number;
   selectedBidder: string;
   contractValue: number;
+  publishedDate: string;
   contractDate: string;
   category: "NH" | "SH";
   year: number;
+  selectedBidderAddress?: string;
+  completionPeriod?: string;
 }
 
 export default function ImpactPage() {
   const [contracts, setContracts] = useState<ContractRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   
   // Active Filter States
   const [selectedYear, setSelectedYear] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Detailed Modal Record State
+  const [selectedContract, setSelectedContract] = useState<ContractRecord | null>(null);
 
   // Statistics/aggregates derived from loaded state
   const [aggregates, setAggregates] = useState({
@@ -63,39 +71,7 @@ export default function ImpactPage() {
     fetchContracts(false);
   }, [selectedCategory, selectedYear, searchQuery]);
 
-  // Handle seeding mock contracts for design validation
-  const handleSeedData = async () => {
-    setSyncing(true);
-    setToast({ message: "Ingesting pre-populated Indian NH & SH contracts...", type: 'info' });
-    try {
-      await fetchContracts(true);
-      setToast({ message: "Successfully loaded design seed data for years 2025 & 2026!", type: 'success' });
-    } catch {
-      setToast({ message: "Failed to populate seed database.", type: 'error' });
-    } finally {
-      setSyncing(false);
-      setTimeout(() => setToast(null), 4000);
-    }
-  };
 
-  // Handle resetting the database back to an empty state
-  const handleResetData = async () => {
-    setSyncing(true);
-    setToast({ message: "Resetting contracts registry to empty state...", type: 'info' });
-    try {
-      const res = await fetch('/api/transparency/contracts', { method: 'POST' });
-      if (res.ok) {
-        setContracts([]);
-        setAggregates({ totalSpend: 0, totalContracts: 0, activeBidders: 0 });
-        setToast({ message: "Contracts database successfully cleared.", type: 'success' });
-      }
-    } catch {
-      setToast({ message: "Failed to clear database.", type: 'error' });
-    } finally {
-      setSyncing(false);
-      setTimeout(() => setToast(null), 4000);
-    }
-  };
 
   // Format amount to Lakhs / Crores for beautiful readability
   const formatINR = (value: number) => {
@@ -126,36 +102,7 @@ export default function ImpactPage() {
             </p>
           </section>
 
-          {/* ---------- DEVELOPER UTILITY PANEL (Alert / Seeding control) ---------- */}
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-[#0f172a]/80 border border-slate-800 p-4 rounded-xl max-w-6xl mx-auto">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🧪</span>
-              <div className="text-left">
-                <p className="text-sm font-bold text-white">Design & Testing Preview Panel</p>
-                <p className="text-slate-400 text-xs mt-0.5">
-                  Currently configured to show real-time empty sections. Ingest preview contracts with one click to test filters & searches.
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2.5">
-              <button
-                onClick={handleSeedData}
-                disabled={syncing}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition bg-cyan-500 text-[#020817] hover:bg-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] disabled:opacity-50"
-              >
-                {syncing ? "Ingesting..." : "Ingest Preview Seed Data"}
-              </button>
-              {contracts.length > 0 && (
-                <button
-                  onClick={handleResetData}
-                  disabled={syncing}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition bg-red-950/40 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white disabled:opacity-50"
-                >
-                  Clear Database
-                </button>
-              )}
-            </div>
-          </div>
+
 
           {/* ---------- SEARCH & FILTERS GATEWAY ---------- */}
           <div className="bg-[#0f172a]/60 border border-slate-800 p-6 rounded-xl space-y-5 max-w-6xl mx-auto">
@@ -258,13 +205,22 @@ export default function ImpactPage() {
           <section className="max-w-6xl mx-auto space-y-4">
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
               <div>
-                <h2 className="text-xl font-bold text-white">Central Highway Contract Registry</h2>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  Central Highway Contract Registry
+                </h2>
                 <p className="text-slate-400 text-xs mt-0.5">Audited contract schedules matching active filters</p>
               </div>
               <span className="text-[10px] bg-[#0f172a] text-cyan-400 border border-slate-800 px-3 py-1 rounded-full font-mono uppercase tracking-wider font-semibold">
                 {selectedCategory === "all" ? "NH & SH Ledger" : `${selectedCategory} Ledger`}
               </span>
             </div>
+
+            {contracts.length > 0 && (
+              <div className="text-[10px] text-cyan-400/80 font-medium bg-cyan-950/10 border border-cyan-800/10 px-4 py-2 rounded-lg flex items-center gap-2 max-w-max">
+                <span>💡</span>
+                <span><b>Interactive Sheet enabled</b>: Click on any contract row to inspect its official <b>"Award of Contract Details"</b>.</span>
+              </div>
+            )}
 
             {loading ? (
               <div className="bg-[#0f172a]/30 border border-slate-800 rounded-xl p-16 text-center space-y-3">
@@ -278,17 +234,8 @@ export default function ImpactPage() {
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold text-white">Highway Registry is Currently Empty</h3>
                   <p className="text-slate-500 text-xs max-w-lg mx-auto leading-relaxed">
-                    No verified Indian highway contracts have been uploaded to the database for this view yet. 
-                    Upload files or click **"Ingest Preview Seed Data"** above to inspect search parsing and year-specific aggregations immediately.
+                    No verified Indian highway contracts are present in this view under active filters.
                   </p>
-                </div>
-                <div>
-                  <button
-                    onClick={handleSeedData}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500 hover:text-[#020817] shadow-md"
-                  >
-                    🚀 Load Seed Data for Verification
-                  </button>
                 </div>
               </div>
             ) : (
@@ -315,8 +262,13 @@ export default function ImpactPage() {
                         });
 
                         return (
-                          <tr key={c.id} className="hover:bg-slate-800/20 transition duration-150">
-                            <td className="p-4 font-medium text-white max-w-[240px] truncate" title={c.organisationName}>
+                          <tr 
+                            key={c.id} 
+                            onClick={() => setSelectedContract(c)}
+                            className="hover:bg-slate-800/30 active:bg-slate-800/50 transition duration-150 cursor-pointer group"
+                            title="Click to view full Award of Contract details"
+                          >
+                            <td className="p-4 font-medium text-white max-w-[240px] truncate group-hover:text-cyan-300 transition" title={c.organisationName}>
                               {c.organisationName}
                             </td>
                             <td className="p-4 font-mono font-bold tracking-wide">
@@ -353,6 +305,237 @@ export default function ImpactPage() {
 
         </div>
       </div>
+
+      {/* ---------- AWARD OF CONTRACT DETAILS MODAL ---------- */}
+      {selectedContract && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-[#020817] border border-slate-800 rounded-xl max-w-5xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-white">
+            
+            {/* Modal Header */}
+            <div className="flex justify-between items-center border-b border-slate-800 px-6 py-4 bg-[#0f172a]">
+              <h3 className="text-xs font-bold text-cyan-400 tracking-wider uppercase flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+                Verified Procurement Registry Record
+              </h3>
+              <button 
+                onClick={() => setSelectedContract(null)}
+                className="text-slate-400 hover:text-white transition text-sm bg-[#020817] hover:bg-slate-800 p-1 rounded-full h-7 w-7 flex items-center justify-center border border-slate-800"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Scrollable details container */}
+            <div className="p-6 overflow-y-auto space-y-6">
+              
+              <h2 className="text-2xl font-extrabold tracking-tight text-white">
+                Award of Contract Details
+              </h2>
+
+              {/* Exact CPPP design spec table */}
+              <div className="border border-slate-800 rounded-lg overflow-hidden bg-[#0a0f1d] shadow-2xl">
+                
+                {/* Header banner matching screen specs */}
+                <div className="bg-[#0B256B] px-4 py-2.5 text-white font-bold text-xs uppercase tracking-wider border-b border-slate-800">
+                  Award of Contract Details :
+                </div>
+
+                {/* Vertical-horizontal structural table mapping colons & label ratios */}
+                <div className="divide-y divide-slate-800 text-xs text-slate-300">
+                  
+                  {/* Row 1: Organisation Name */}
+                  <div className="flex flex-col md:flex-row md:items-stretch">
+                    <div className="w-full md:w-[25%] bg-[#0f172a]/40 p-3 font-semibold text-slate-400 border-r border-slate-800 flex items-center">
+                      Organisation Name
+                    </div>
+                    <div className="hidden md:flex w-[3%] items-center justify-center p-3 font-semibold text-slate-500 border-r border-slate-800">
+                      :
+                    </div>
+                    <div className="w-full md:w-[72%] p-3 text-white font-medium flex items-center">
+                      {selectedContract.organisationName}
+                    </div>
+                  </div>
+
+                  {/* Row 2: Tender Ref. No. */}
+                  <div className="flex flex-col md:flex-row md:items-stretch">
+                    <div className="w-full md:w-[25%] bg-[#0f172a]/40 p-3 font-semibold text-slate-400 border-r border-slate-800 flex items-center">
+                      Tender Ref. No.
+                    </div>
+                    <div className="hidden md:flex w-[3%] items-center justify-center p-3 font-semibold text-slate-500 border-r border-slate-800">
+                      :
+                    </div>
+                    <div className="w-full md:w-[72%] p-3 text-cyan-400 font-mono font-bold tracking-wide flex items-center">
+                      {selectedContract.tenderRefNo}
+                    </div>
+                  </div>
+
+                  {/* Row 3: Tender Description */}
+                  <div className="flex flex-col md:flex-row md:items-stretch">
+                    <div className="w-full md:w-[25%] bg-[#0f172a]/40 p-3 font-semibold text-slate-400 border-r border-slate-800 flex items-center">
+                      Tender Description
+                    </div>
+                    <div className="hidden md:flex w-[3%] items-center justify-center p-3 font-semibold text-slate-500 border-r border-slate-800">
+                      :
+                    </div>
+                    <div className="w-full md:w-[72%] p-3 text-slate-200 flex items-center leading-relaxed text-left">
+                      {selectedContract.tenderDescription || "N/A"}
+                    </div>
+                  </div>
+
+                  {/* Row 4: Tender Document */}
+                  <div className="flex flex-col md:flex-row md:items-stretch">
+                    <div className="w-full md:w-[25%] bg-[#0f172a]/40 p-3 font-semibold text-slate-400 border-r border-slate-800 flex items-center">
+                      Tender Document
+                    </div>
+                    <div className="hidden md:flex w-[3%] items-center justify-center p-3 font-semibold text-slate-500 border-r border-slate-800">
+                      :
+                    </div>
+                    <div className="w-full md:w-[72%] p-3 flex items-center truncate">
+                      {selectedContract.tenderDocument ? (
+                        <a 
+                          href={selectedContract.tenderDocument} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-cyan-400 hover:text-cyan-300 hover:underline inline-flex items-center gap-1.5 font-medium truncate"
+                        >
+                          {selectedContract.tenderDocument} 🔗
+                        </a>
+                      ) : (
+                        <span className="text-slate-500 italic">Not available</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Row 5: Tender Type & Number of Bids Received */}
+                  <div className="flex flex-col md:flex-row md:items-stretch">
+                    {/* Left half: Tender Type */}
+                    <div className="w-full md:w-[25%] bg-[#0f172a]/40 p-3 font-semibold text-slate-400 border-r border-slate-800 flex items-center">
+                      Tender Type
+                    </div>
+                    <div className="hidden md:flex w-[3%] items-center justify-center p-3 font-semibold text-slate-500 border-r border-slate-800">
+                      :
+                    </div>
+                    <div className="w-full md:w-[22%] p-3 text-white flex items-center border-r border-slate-800">
+                      {selectedContract.tenderType || "Works"}
+                    </div>
+
+                    {/* Right half: Number of bids received */}
+                    <div className="w-full md:w-[25%] bg-[#0f172a]/40 p-3 font-semibold text-slate-400 border-r border-slate-800 flex items-center md:pl-3">
+                      Number of bids received
+                    </div>
+                    <div className="hidden md:flex w-[3%] items-center justify-center p-3 font-semibold text-slate-500 border-r border-slate-800">
+                      :
+                    </div>
+                    <div className="w-full md:w-[22%] p-3 text-white font-mono font-bold flex items-center">
+                      {selectedContract.bidsReceived}
+                    </div>
+                  </div>
+
+                  {/* Row 6: Selected Bidder & Contract Value */}
+                  <div className="flex flex-col md:flex-row md:items-stretch">
+                    {/* Left half: Selected Bidder */}
+                    <div className="w-full md:w-[25%] bg-[#0f172a]/40 p-3 font-semibold text-slate-400 border-r border-slate-800 flex items-center">
+                      Name of the selected bidder(s)
+                    </div>
+                    <div className="hidden md:flex w-[3%] items-center justify-center p-3 font-semibold text-slate-500 border-r border-slate-800">
+                      :
+                    </div>
+                    <div className="w-full md:w-[22%] p-3 text-white font-medium flex items-center border-r border-slate-800 break-words max-w-full">
+                      {selectedContract.selectedBidder}
+                    </div>
+
+                    {/* Right half: Contract Value */}
+                    <div className="w-full md:w-[25%] bg-[#0f172a]/40 p-3 font-semibold text-slate-400 border-r border-slate-800 flex items-center md:pl-3">
+                      Contract Value *
+                    </div>
+                    <div className="hidden md:flex w-[3%] items-center justify-center p-3 font-semibold text-slate-500 border-r border-slate-800">
+                      :
+                    </div>
+                    <div className="w-full md:w-[22%] p-3 text-cyan-400 font-mono font-bold flex items-center gap-1.5 flex-wrap">
+                      <span>{selectedContract.contractValue}</span>
+                      <span className="text-[10px] text-slate-400 font-normal">
+                        ({formatINR(selectedContract.contractValue)})
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Row 7: Contract Value Currency Notice */}
+                  <div className="p-3 bg-red-950/25">
+                    <p className="text-[10px] text-slate-400 font-semibold italic flex items-center gap-1">
+                      <span className="text-red-400 text-xs font-bold font-mono">*</span>
+                      Currency regarding Contract Value may please be checked with the corresponding tender portals/websites.
+                    </p>
+                  </div>
+
+                  {/* Row 8: Address of Selected Bidder */}
+                  <div className="flex flex-col md:flex-row md:items-stretch">
+                    <div className="w-full md:w-[25%] bg-[#0f172a]/40 p-3 font-semibold text-slate-400 border-r border-slate-800 flex items-center">
+                      Address of the selected bidder(s)
+                    </div>
+                    <div className="hidden md:flex w-[3%] items-center justify-center p-3 font-semibold text-slate-500 border-r border-slate-800">
+                      :
+                    </div>
+                    <div className="w-full md:w-[72%] p-3 text-slate-300 flex items-center">
+                      {selectedContract.selectedBidderAddress || "Not Provided"}
+                    </div>
+                  </div>
+
+                  {/* Row 9: Published Date & Contract Date */}
+                  <div className="flex flex-col md:flex-row md:items-stretch">
+                    {/* Left half: Published Date */}
+                    <div className="w-full md:w-[25%] bg-[#0f172a]/40 p-3 font-semibold text-slate-400 border-r border-slate-800 flex items-center">
+                      Published Date
+                    </div>
+                    <div className="hidden md:flex w-[3%] items-center justify-center p-3 font-semibold text-slate-500 border-r border-slate-800">
+                      :
+                    </div>
+                    <div className="w-full md:w-[22%] p-3 text-slate-300 flex items-center border-r border-slate-800 font-mono">
+                      {selectedContract.publishedDate || "N/A"}
+                    </div>
+
+                    {/* Right half: Contract Date */}
+                    <div className="w-full md:w-[25%] bg-[#0f172a]/40 p-3 font-semibold text-slate-400 border-r border-slate-800 flex items-center md:pl-3">
+                      Contract Date
+                    </div>
+                    <div className="hidden md:flex w-[3%] items-center justify-center p-3 font-semibold text-slate-500 border-r border-slate-800">
+                      :
+                    </div>
+                    <div className="w-full md:w-[22%] p-3 text-slate-300 flex items-center font-mono">
+                      {selectedContract.contractDate || "N/A"}
+                    </div>
+                  </div>
+
+                  {/* Row 10: Completion Period */}
+                  <div className="flex flex-col md:flex-row md:items-stretch">
+                    <div className="w-full md:w-[25%] bg-[#0f172a]/40 p-3 font-semibold text-slate-400 border-r border-slate-800 flex items-center">
+                      Date of Completion/Completion Period in Days
+                    </div>
+                    <div className="hidden md:flex w-[3%] items-center justify-center p-3 font-semibold text-slate-500 border-r border-slate-800">
+                      :
+                    </div>
+                    <div className="w-full md:w-[72%] p-3 text-slate-300 flex items-center">
+                      {selectedContract.completionPeriod || "Not Specified"}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-[#0f172a] px-6 py-4 border-t border-slate-800 flex justify-end gap-3">
+              <button
+                onClick={() => setSelectedContract(null)}
+                className="bg-cyan-500 hover:bg-cyan-400 text-[#020817] px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]"
+              >
+                Close View
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* ---------- TOAST NOTIFICATION ---------- */}
       {toast && (

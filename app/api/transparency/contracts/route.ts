@@ -3,132 +3,130 @@ import fs from "fs";
 import path from "path";
 
 const CONTRACTS_FILE = path.join(process.cwd(), "contracts_store.json");
+const RAW_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full.json");
 
 export interface ContractRecord {
   id: string;
   organisationName: string;
   tenderRefNo: string;
+  tenderDescription: string;
+  tenderDocument: string;
+  tenderType: string;
   bidsReceived: number;
   selectedBidder: string;
   contractValue: number;
+  publishedDate: string;
   contractDate: string;
   category: "NH" | "SH";
   year: number;
+  selectedBidderAddress?: string;
+  completionPeriod?: string;
 }
 
-// Developer seed dataset containing highly realistic NH & SH contract records for 2025 and 2026
-const DEVELOPER_SEED_CONTRACTS: ContractRecord[] = [
-  {
-    id: "seed_1",
-    organisationName: "National Highways Authority of India (NHAI)",
-    tenderRefNo: "2025_NHAI_259959_1",
-    bidsReceived: 4,
-    selectedBidder: "L&T Infrastructure Ltd.",
-    contractValue: 2579891676,
-    contractDate: "2025-03-10",
-    category: "NH",
-    year: 2025
-  },
-  {
-    id: "seed_2",
-    organisationName: "National Highways Authority of India (NHAI)",
-    tenderRefNo: "2025_NHAI_260098_1",
-    bidsReceived: 5,
-    selectedBidder: "IRB Infrastructure Developers",
-    contractValue: 2100793585,
-    contractDate: "2025-08-27",
-    category: "NH",
-    year: 2025
-  },
-  {
-    id: "seed_3",
-    organisationName: "National Highways Authority of India (NHAI)",
-    tenderRefNo: "2026_NHAI_256630_2",
-    bidsReceived: 3,
-    selectedBidder: "Tata Projects",
-    contractValue: 322370906,
-    contractDate: "2026-02-14",
-    category: "NH",
-    year: 2026
-  },
-  {
-    id: "seed_4",
-    organisationName: "Gujarat State Road Development Corporation (GSRDC)",
-    tenderRefNo: "2025_GSRDC_123456_1",
-    bidsReceived: 6,
-    selectedBidder: "Dilip Buildcon Ltd.",
-    contractValue: 1680000000,
-    contractDate: "2025-11-20",
-    category: "SH",
-    year: 2025
-  },
-  {
-    id: "seed_5",
-    organisationName: "Maharashtra Public Works Department (MPWD)",
-    tenderRefNo: "2026_MPWD_889922_1",
-    bidsReceived: 8,
-    selectedBidder: "Ashoka Buildcon Ltd.",
-    contractValue: 742000000,
-    contractDate: "2026-05-06",
-    category: "SH",
-    year: 2026
-  },
-  {
-    id: "seed_6",
-    organisationName: "National Highways Authority of India (NHAI)",
-    tenderRefNo: "2025_NHAI_259367_1",
-    bidsReceived: 5,
-    selectedBidder: "IRB Infrastructure Developers",
-    contractValue: 1980000000,
-    contractDate: "2025-04-18",
-    category: "NH",
-    year: 2025
-  },
-  {
-    id: "seed_7",
-    organisationName: "Uttarakhand Public Works Department (UKPWD)",
-    tenderRefNo: "2026_UKPWD_345211_1",
-    bidsReceived: 4,
-    selectedBidder: "PWD Class-A Registered Contractor",
-    contractValue: 280000000,
-    contractDate: "2026-02-05",
-    category: "SH",
-    year: 2026
-  },
-  {
-    id: "seed_8",
-    organisationName: "National Highways Authority of India (NHAI)",
-    tenderRefNo: "2025_NHAI_259347_1",
-    bidsReceived: 3,
-    selectedBidder: "Tata Projects",
-    contractValue: 5200000,
-    contractDate: "2025-10-31",
-    category: "NH",
-    year: 2025
-  },
-  {
-    id: "seed_9",
-    organisationName: "Tamil Nadu Road Development Company (TNRDC)",
-    tenderRefNo: "2026_TNRDC_554433_1",
-    bidsReceived: 6,
-    selectedBidder: "GMR Infrastructure",
-    contractValue: 685000000,
-    contractDate: "2026-01-20",
-    category: "SH",
-    year: 2026
-  },
-  {
-    id: "seed_10",
-    organisationName: "Maharashtra State Road Development Corporation (MSRDC)",
-    tenderRefNo: "2025_MSRDC_776655_1",
-    bidsReceived: 7,
-    selectedBidder: "IRB Infrastructure Developers",
-    contractValue: 154000000,
-    contractDate: "2025-12-15",
-    category: "SH",
-    year: 2025
+/**
+ * Parses and processes raw tenders from cppp_tenders_full.json and stores them in contracts_store.json.
+ * Automatically classifies categories (NH vs. SH) and years (2025/2026).
+ */
+function parseAndStoreRealTenders(force = false): ContractRecord[] {
+  if (!force && fs.existsSync(CONTRACTS_FILE)) {
+    try {
+      const data = fs.readFileSync(CONTRACTS_FILE, "utf8");
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    } catch (e) {
+      console.error("Error reading contracts_store.json:", e);
+    }
   }
-];
+
+  if (!fs.existsSync(RAW_TENDERS_FILE)) {
+    console.error("RAW Tenders file not found at path:", RAW_TENDERS_FILE);
+    return [];
+  }
+
+  try {
+    const rawData = fs.readFileSync(RAW_TENDERS_FILE, "utf8");
+    const parsedData = JSON.parse(rawData);
+    if (!Array.isArray(parsedData)) {
+      throw new Error("Expected array of raw tenders");
+    }
+
+    const cleanText = (str: string) => {
+      if (!str) return '';
+      return str
+        .replace(/&#x0d;/gi, '')
+        .replace(/&amp;/g, '&')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    const contracts: ContractRecord[] = [];
+
+    parsedData.forEach((item: any, index: number) => {
+      const s = item.structured_data || {};
+      
+      const orgName = cleanText(s['Organisation Name'] || '');
+      const refNo = cleanText(s['Tender Ref. No.'] || '');
+      const description = cleanText(s['Tender Description'] || '');
+      const document = cleanText(s['Tender Document'] || '');
+      const type = cleanText(s['Tender Type'] || 'Works');
+      const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
+      const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
+      const valStr = (s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
+      const value = parseFloat(valStr) || 0;
+      const published = cleanText(s['Published Date'] || '');
+      const contractDate = cleanText(s['Contract Date'] || '');
+      const address = cleanText(s['Address of the selected bidder(s)'] || '');
+      const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
+
+      // Determine year from contractDate, published date, or refNo
+      let year = 2025;
+      const dateStringForYear = `${contractDate} ${published} ${refNo}`;
+      const yearMatch = dateStringForYear.match(/\b(2025|2026)\b/);
+      if (yearMatch) {
+        year = parseInt(yearMatch[1], 10);
+      }
+
+      // Determine Category: NH vs SH
+      let category: "NH" | "SH" = 'SH';
+      const searchStr = `${orgName} ${refNo} ${description}`.toUpperCase();
+      if (
+        searchStr.includes('NHAI') ||
+        searchStr.includes('NATIONAL HIGHWAY') ||
+        /\bNH[- ]?\d+/i.test(searchStr)
+      ) {
+        category = 'NH';
+      }
+
+      if (year === 2025 || year === 2026) {
+        contracts.push({
+          id: `real_${index + 1}`,
+          organisationName: orgName,
+          tenderRefNo: refNo,
+          tenderDescription: description,
+          tenderDocument: document,
+          tenderType: type,
+          bidsReceived: bids,
+          selectedBidder: bidder,
+          contractValue: value,
+          publishedDate: published,
+          contractDate: contractDate,
+          category: category,
+          year: year,
+          selectedBidderAddress: address,
+          completionPeriod: completion
+        });
+      }
+    });
+
+    fs.writeFileSync(CONTRACTS_FILE, JSON.stringify(contracts, null, 2), "utf8");
+    return contracts;
+  } catch (error) {
+    console.error("Failed to parse and store raw CPPP tenders:", error);
+    return [];
+  }
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -140,26 +138,8 @@ export async function GET(request: NextRequest) {
   try {
     let contracts: ContractRecord[] = [];
 
-    // 1. Read files or load seed data
-    if (seed) {
-      contracts = DEVELOPER_SEED_CONTRACTS;
-      // Optionally write to the file to make it stick!
-      try {
-        fs.writeFileSync(CONTRACTS_FILE, JSON.stringify(DEVELOPER_SEED_CONTRACTS, null, 2));
-      } catch (err) {
-        console.error("Failed to write seeded contracts to local store:", err);
-      }
-    } else if (fs.existsSync(CONTRACTS_FILE)) {
-      try {
-        const fileData = fs.readFileSync(CONTRACTS_FILE, "utf8");
-        const parsed = JSON.parse(fileData);
-        if (Array.isArray(parsed)) {
-          contracts = parsed;
-        }
-      } catch (cacheErr) {
-        console.warn("Failed to read contracts file, serving empty array:", cacheErr);
-      }
-    }
+    // Load real parsed tenders (and re-parse if seed=true is passed)
+    contracts = parseAndStoreRealTenders(seed);
 
     // 2. Perform Filtering
     let filtered = [...contracts];
@@ -177,15 +157,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Filter by Search Bar (supports "NH" followed by number, bidder name, tender ref, etc.)
+    // Filter by Search Bar (supports highway codes, descriptions, organisations, or bidder names)
     if (searchQuery) {
-      // Clean query: e.g. "nh-44" -> "nh44", "sh 3" -> "sh3"
       const normalizedQuery = searchQuery.replace(/[-\s]/g, "");
 
       filtered = filtered.filter((c) => {
         const normalizedRef = c.tenderRefNo.toLowerCase().replace(/[-\s]/g, "");
         const bidderName = c.selectedBidder.toLowerCase();
         const orgName = c.organisationName.toLowerCase();
+        const description = (c.tenderDescription || "").toLowerCase();
         
         // Also support searching standard NH/SH labels
         const categoryLabel = `${c.category.toLowerCase()}${c.tenderRefNo.toLowerCase()}`;
@@ -195,6 +175,7 @@ export async function GET(request: NextRequest) {
           normalizedRef.includes(normalizedQuery) ||
           bidderName.includes(searchQuery) ||
           orgName.includes(searchQuery) ||
+          description.includes(searchQuery) ||
           normalizedCategoryLabel.includes(normalizedQuery)
         );
       });
@@ -207,7 +188,11 @@ export async function GET(request: NextRequest) {
     filtered.forEach((c) => {
       totalSpend += c.contractValue;
       if (c.selectedBidder) {
-        activeBiddersSet.add(c.selectedBidder);
+        // Multi-bidder string splits
+        c.selectedBidder.split(",").forEach(b => {
+          const trimmed = b.trim();
+          if (trimmed) activeBiddersSet.add(trimmed);
+        });
       }
     });
 
@@ -218,7 +203,7 @@ export async function GET(request: NextRequest) {
         totalContracts: filtered.length,
         activeBidders: activeBiddersSet.size,
       },
-      source: seed ? "seed" : "disk",
+      source: "disk",
       syncedAt: new Date().toISOString()
     });
   } catch (err: any) {
@@ -233,7 +218,7 @@ export async function GET(request: NextRequest) {
 // POST endpoint to reset database to empty state if needed
 export async function POST(request: NextRequest) {
   try {
-    fs.writeFileSync(CONTRACTS_FILE, JSON.stringify([], null, 2));
+    fs.writeFileSync(CONTRACTS_FILE, JSON.stringify([], null, 2), "utf8");
     return NextResponse.json({ message: "Contracts database reset to empty successfully", status: "success" });
   } catch (err: any) {
     return NextResponse.json({ message: "Failed to reset contracts database", error: err.message }, { status: 500 });
