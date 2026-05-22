@@ -119,15 +119,20 @@ function parseAndStoreRealTenders(force = false): ContractRecord[] {
             year = parseInt(yearMatch[1], 10);
           }
 
-          let category: "NH" | "SH" = 'SH';
-          const searchStr = `${orgName} ${refNo} ${description}`.toUpperCase();
-          const isNHAI = searchStr.includes('NHAI') || searchStr.includes('NATIONAL HIGHWAY') || /\bNH[- ]?\d+/i.test(searchStr);
-          const hasSHKeywords = /\bSH[- ]?\d+/i.test(searchStr) || searchStr.includes('STATE HIGHWAY') || searchStr.includes('STATEROAD');
-          
-          if (isNHAI && !hasSHKeywords) {
+          let category: "NH" | "SH";
+          const orgRefStr = `${orgName} ${refNo}`.toUpperCase();
+          const isNHAI = orgRefStr.includes('NHAI') || orgRefStr.includes('NATIONAL HIGHWAY') || /\bNH[- ]?\d+/i.test(orgRefStr);
+          const hasSHKeywordsInOrgRef = /\bSH[- ]?\d+/i.test(orgRefStr) || orgRefStr.includes('STATE HIGHWAY') || orgRefStr.includes('STATEROAD');
+
+          if (isNHAI) {
             category = 'NH';
-          } else {
+          } else if (hasSHKeywordsInOrgRef) {
             category = 'SH';
+          } else {
+            const descriptionStr = description.toUpperCase();
+            const hasSHInDesc = /\bSH[- ]?\d+/i.test(descriptionStr) || descriptionStr.includes('STATE HIGHWAY') || descriptionStr.includes('STATEROAD');
+            const isNHProject = /\bNH[- ]?\d+/i.test(orgRefStr);
+            category = (hasSHInDesc && !isNHProject) ? 'SH' : 'NH';
           }
 
           const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
@@ -182,15 +187,20 @@ function parseAndStoreRealTenders(force = false): ContractRecord[] {
           const completion = cleanText(item.completion_period_days || '');
           const year = parseInt(item.scraped_year || '2025', 10);
           
-          let category: "NH" | "SH" = 'SH';
-          const searchStr = `${orgName} ${refNo} ${description}`.toUpperCase();
-          const isNHAI = searchStr.includes('NHAI') || searchStr.includes('NATIONAL HIGHWAY') || /\bNH[- ]?\d+/i.test(searchStr);
-          const hasSHKeywords = /\bSH[- ]?\d+/i.test(searchStr) || searchStr.includes('STATE HIGHWAY') || searchStr.includes('STATEROAD');
-          
-          if (isNHAI && !hasSHKeywords) {
+          let category: "NH" | "SH";
+          const orgRefStr = `${orgName} ${refNo}`.toUpperCase();
+          const isNHAI = orgRefStr.includes('NHAI') || orgRefStr.includes('NATIONAL HIGHWAY') || /\bNH[- ]?\d+/i.test(orgRefStr);
+          const hasSHKeywordsInOrgRef = /\bSH[- ]?\d+/i.test(orgRefStr) || orgRefStr.includes('STATE HIGHWAY') || orgRefStr.includes('STATEROAD');
+
+          if (isNHAI) {
             category = 'NH';
-          } else {
+          } else if (hasSHKeywordsInOrgRef) {
             category = 'SH';
+          } else {
+            const descriptionStr = description.toUpperCase();
+            const hasSHInDesc = /\bSH[- ]?\d+/i.test(descriptionStr) || descriptionStr.includes('STATE HIGHWAY') || descriptionStr.includes('STATEROAD');
+            const isNHProject = /\bNH[- ]?\d+/i.test(orgRefStr);
+            category = (hasSHInDesc && !isNHProject) ? 'SH' : 'NH';
           }
 
           const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
