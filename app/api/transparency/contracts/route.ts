@@ -4,6 +4,7 @@ import path from "path";
 
 const CONTRACTS_FILE = path.join(process.cwd(), "contracts_store.json");
 const RAW_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full.json");
+const RAW_NHAI_TENDERS_FILE = path.join(process.cwd(), "..", "nhai_tenders.json");
 
 export interface ContractRecord {
   id: string;
@@ -21,11 +22,47 @@ export interface ContractRecord {
   year: number;
   selectedBidderAddress?: string;
   completionPeriod?: string;
+  state: string;
+}
+
+const STATES_LIST = [
+  'Uttar Pradesh', 'Maharashtra', 'Tamil Nadu', 'Punjab', 'Rajasthan',
+  'Odisha', 'Assam', 'Kerala', 'Haryana', 'Jharkhand', 'Tripura', 'Goa',
+  'Sikkim', 'Mizoram', 'Bihar', 'West Bengal', 'Karnataka', 'Gujarat',
+  'Madhya Pradesh', 'Andhra Pradesh', 'Telangana', 'Chhattisgarh',
+  'Uttarakhand', 'Himachal Pradesh', 'Arunachal Pradesh', 'Nagaland',
+  'Manipur', 'Meghalaya'
+];
+
+function classifyState(orgName: string, refNo: string, description: string, bidderAddress: string): string {
+  const combinedText = `${orgName} ${refNo} ${description} ${bidderAddress}`.toLowerCase();
+  
+  for (const state of STATES_LIST) {
+    if (combinedText.includes(state.toLowerCase())) {
+      return state;
+    }
+  }
+  
+  // Specific mappings for RO (Regional Office) names if no state match in description
+  if (combinedText.includes('ro-nagpur') || combinedText.includes('ro-mumbai') || combinedText.includes('panvel')) return 'Maharashtra';
+  if (combinedText.includes('ro-chennai') || combinedText.includes('ro-madurai') || combinedText.includes('thanjavur')) return 'Tamil Nadu';
+  if (combinedText.includes('ro-chandigarh') || combinedText.includes('jalandhar')) return 'Punjab';
+  if (combinedText.includes('ro-lucknow') || combinedText.includes('ro-varanasi')) return 'Uttar Pradesh';
+  if (combinedText.includes('ro-gandhinagar') || combinedText.includes('bharuch') || combinedText.includes('rajkot')) return 'Gujarat';
+  if (combinedText.includes('ro-jaipur')) return 'Rajasthan';
+  if (combinedText.includes('ro-hyderabad')) return 'Telangana';
+  if (combinedText.includes('ro-bhopal') || combinedText.includes('jabalpur')) return 'Madhya Pradesh';
+  if (combinedText.includes('ro-bangalore') || combinedText.includes('hassan')) return 'Karnataka';
+  if (combinedText.includes('ro-vijayawada')) return 'Andhra Pradesh';
+  if (combinedText.includes('ro-dehradun')) return 'Uttarakhand';
+  if (combinedText.includes('ro-raipur')) return 'Chhattisgarh';
+  
+  return 'Other';
 }
 
 /**
- * Parses and processes raw tenders from cppp_tenders_full.json and stores them in contracts_store.json.
- * Automatically classifies categories (NH vs. SH) and years (2025/2026).
+ * Parses and processes raw tenders from cppp_tenders_full.json and nhai_tenders.json,
+ * then stores them in contracts_store.json with advanced deduplication.
  */
 function parseAndStoreRealTenders(force = false): ContractRecord[] {
   if (!force && fs.existsSync(CONTRACTS_FILE)) {
@@ -40,99 +77,177 @@ function parseAndStoreRealTenders(force = false): ContractRecord[] {
     }
   }
 
-  if (!fs.existsSync(RAW_TENDERS_FILE)) {
-    console.error("RAW Tenders file not found at path:", RAW_TENDERS_FILE);
-    return [];
+  const contracts: ContractRecord[] = [];
+  const seenKeys = new Set<string>();
+
+  const cleanText = (str: string) => {
+    if (!str) return '';
+    return str
+      .replace(/&#x0d;/gi, '')
+      .replace(/&amp;/g, '&')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  // 1. Process cppp_tenders_full.json
+  if (fs.existsSync(RAW_TENDERS_FILE)) {
+    try {
+      const rawData = fs.readFileSync(RAW_TENDERS_FILE, "utf8");
+      const parsedData = JSON.parse(rawData);
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach((item: any, index: number) => {
+          const s = item.structured_data || {};
+          
+          const orgName = cleanText(s['Organisation Name'] || '');
+          const refNo = cleanText(s['Tender Ref. No.'] || '');
+          const description = cleanText(s['Tender Description'] || '');
+          const document = cleanText(s['Tender Document'] || '');
+          const type = cleanText(s['Tender Type'] || 'Works');
+          const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
+          const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
+          const valStr = (s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
+          const value = parseFloat(valStr) || 0;
+          const published = cleanText(s['Published Date'] || '');
+          const contractDate = cleanText(s['Contract Date'] || '');
+          const address = cleanText(s['Address of the selected bidder(s)'] || '');
+          const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
+
+          let year = 2025;
+          const dateStringForYear = `${contractDate} ${published} ${refNo}`;
+          const yearMatch = dateStringForYear.match(/\b(2021|2022|2023|2024|2025|2026)\b/);
+          if (yearMatch) {
+            year = parseInt(yearMatch[1], 10);
+          }
+
+          let category: "NH" | "SH";
+          const orgRefStr = `${orgName} ${refNo}`.toUpperCase();
+          const isNHAI = orgRefStr.includes('NHAI') || orgRefStr.includes('NATIONAL HIGHWAY') || /\bNH[- ]?\d+/i.test(orgRefStr);
+          const hasSHKeywordsInOrgRef = /\bSH[- ]?\d+/i.test(orgRefStr) || orgRefStr.includes('STATE HIGHWAY') || orgRefStr.includes('STATEROAD');
+
+          if (isNHAI) {
+            category = 'NH';
+          } else if (hasSHKeywordsInOrgRef) {
+            category = 'SH';
+          } else {
+            const descriptionStr = description.toUpperCase();
+            const hasSHInDesc = /\bSH[- ]?\d+/i.test(descriptionStr) || descriptionStr.includes('STATE HIGHWAY') || descriptionStr.includes('STATEROAD');
+            const isNHProject = /\bNH[- ]?\d+/i.test(orgRefStr);
+            category = (hasSHInDesc && !isNHProject) ? 'SH' : 'NH';
+          }
+
+          const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
+
+          if (!seenKeys.has(uniqueKey)) {
+            seenKeys.add(uniqueKey);
+            contracts.push({
+              id: `cppp_${index + 1}`,
+              organisationName: orgName,
+              tenderRefNo: refNo,
+              tenderDescription: description,
+              tenderDocument: document,
+              tenderType: type,
+              bidsReceived: bids,
+              selectedBidder: bidder,
+              contractValue: value,
+              publishedDate: published,
+              contractDate: contractDate,
+              category: category,
+              year: year,
+              selectedBidderAddress: address,
+              completionPeriod: completion,
+              state: classifyState(orgName, refNo, description, address)
+            });
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Error reading/parsing RAW_TENDERS_FILE:", e);
+    }
+  }
+
+  // 2. Process nhai_tenders.json
+  if (fs.existsSync(RAW_NHAI_TENDERS_FILE)) {
+    try {
+      const rawData = fs.readFileSync(RAW_NHAI_TENDERS_FILE, "utf8");
+      const parsedData = JSON.parse(rawData);
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach((item: any, index: number) => {
+          const orgName = cleanText(item.organisation_name || '');
+          const refNo = cleanText(item.tender_ref_no || '');
+          const description = cleanText(item.tender_description || '');
+          const document = cleanText(item.tender_document || '');
+          const type = cleanText(item.tender_type || 'Works');
+          const bids = parseInt((item.num_bids_received || '').replace(/\D/g, ''), 10) || 0;
+          const bidder = cleanText(item.selected_bidder_name || '');
+          const valStr = (item.contract_value || '').replace(/[^0-9.]/g, '');
+          const value = parseFloat(valStr) || 0;
+          const published = cleanText(item.published_date || '');
+          const contractDate = cleanText(item.contract_date || '');
+          const address = cleanText(item.selected_bidder_address || '');
+          const completion = cleanText(item.completion_period_days || '');
+          const year = parseInt(item.scraped_year || '2025', 10);
+          
+          let category: "NH" | "SH";
+          const orgRefStr = `${orgName} ${refNo}`.toUpperCase();
+          const isNHAI = orgRefStr.includes('NHAI') || orgRefStr.includes('NATIONAL HIGHWAY') || /\bNH[- ]?\d+/i.test(orgRefStr);
+          const hasSHKeywordsInOrgRef = /\bSH[- ]?\d+/i.test(orgRefStr) || orgRefStr.includes('STATE HIGHWAY') || orgRefStr.includes('STATEROAD');
+
+          if (isNHAI) {
+            category = 'NH';
+          } else if (hasSHKeywordsInOrgRef) {
+            category = 'SH';
+          } else {
+            const descriptionStr = description.toUpperCase();
+            const hasSHInDesc = /\bSH[- ]?\d+/i.test(descriptionStr) || descriptionStr.includes('STATE HIGHWAY') || descriptionStr.includes('STATEROAD');
+            const isNHProject = /\bNH[- ]?\d+/i.test(orgRefStr);
+            category = (hasSHInDesc && !isNHProject) ? 'SH' : 'NH';
+          }
+
+          const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
+
+          if (!seenKeys.has(uniqueKey)) {
+            seenKeys.add(uniqueKey);
+            contracts.push({
+              id: `nhai_${index + 1}`,
+              organisationName: orgName,
+              tenderRefNo: refNo,
+              tenderDescription: description,
+              tenderDocument: document,
+              tenderType: type,
+              bidsReceived: bids,
+              selectedBidder: bidder,
+              contractValue: value,
+              publishedDate: published,
+              contractDate: contractDate,
+              category: category,
+              year: year,
+              selectedBidderAddress: address,
+              completionPeriod: completion,
+              state: classifyState(orgName, refNo, description, address)
+            });
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Error reading/parsing RAW_NHAI_TENDERS_FILE:", e);
+    }
   }
 
   try {
-    const rawData = fs.readFileSync(RAW_TENDERS_FILE, "utf8");
-    const parsedData = JSON.parse(rawData);
-    if (!Array.isArray(parsedData)) {
-      throw new Error("Expected array of raw tenders");
-    }
-
-    const cleanText = (str: string) => {
-      if (!str) return '';
-      return str
-        .replace(/&#x0d;/gi, '')
-        .replace(/&amp;/g, '&')
-        .replace(/\s+/g, ' ')
-        .trim();
-    };
-
-    const contracts: ContractRecord[] = [];
-
-    parsedData.forEach((item: any, index: number) => {
-      const s = item.structured_data || {};
-      
-      const orgName = cleanText(s['Organisation Name'] || '');
-      const refNo = cleanText(s['Tender Ref. No.'] || '');
-      const description = cleanText(s['Tender Description'] || '');
-      const document = cleanText(s['Tender Document'] || '');
-      const type = cleanText(s['Tender Type'] || 'Works');
-      const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
-      const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
-      const valStr = (s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
-      const value = parseFloat(valStr) || 0;
-      const published = cleanText(s['Published Date'] || '');
-      const contractDate = cleanText(s['Contract Date'] || '');
-      const address = cleanText(s['Address of the selected bidder(s)'] || '');
-      const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
-
-      // Determine year from contractDate, published date, or refNo
-      let year = 2025;
-      const dateStringForYear = `${contractDate} ${published} ${refNo}`;
-      const yearMatch = dateStringForYear.match(/\b(2025|2026)\b/);
-      if (yearMatch) {
-        year = parseInt(yearMatch[1], 10);
-      }
-
-      // Determine Category: NH vs SH
-      let category: "NH" | "SH" = 'SH';
-      const searchStr = `${orgName} ${refNo} ${description}`.toUpperCase();
-      if (
-        searchStr.includes('NHAI') ||
-        searchStr.includes('NATIONAL HIGHWAY') ||
-        /\bNH[- ]?\d+/i.test(searchStr)
-      ) {
-        category = 'NH';
-      }
-
-      if (year === 2025 || year === 2026) {
-        contracts.push({
-          id: `real_${index + 1}`,
-          organisationName: orgName,
-          tenderRefNo: refNo,
-          tenderDescription: description,
-          tenderDocument: document,
-          tenderType: type,
-          bidsReceived: bids,
-          selectedBidder: bidder,
-          contractValue: value,
-          publishedDate: published,
-          contractDate: contractDate,
-          category: category,
-          year: year,
-          selectedBidderAddress: address,
-          completionPeriod: completion
-        });
-      }
-    });
-
     fs.writeFileSync(CONTRACTS_FILE, JSON.stringify(contracts, null, 2), "utf8");
-    return contracts;
   } catch (error) {
-    console.error("Failed to parse and store raw CPPP tenders:", error);
-    return [];
+    console.error("Failed to write merged contracts database:", error);
   }
+
+  return contracts;
 }
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const seed = searchParams.get("seed") === "true";
   const categoryFilter = searchParams.get("category"); // "NH" or "SH" or "all"
-  const yearFilter = searchParams.get("year"); // "2025" or "2026" or "all"
+  const yearFilter = searchParams.get("year"); // "2021" to "2026" or "all"
+  const stateFilter = searchParams.get("state"); // State name or "all"
   const searchQuery = searchParams.get("search")?.toLowerCase().trim() || "";
 
   try {
@@ -147,6 +262,11 @@ export async function GET(request: NextRequest) {
     // Filter by NH or SH Category
     if (categoryFilter && categoryFilter !== "all") {
       filtered = filtered.filter(c => c.category === categoryFilter);
+    }
+
+    // Filter by State ONLY when selected category is State Highways (SH)
+    if (categoryFilter === "SH" && stateFilter && stateFilter !== "all") {
+      filtered = filtered.filter(c => c.state === stateFilter);
     }
 
     // Filter by Year
@@ -188,7 +308,6 @@ export async function GET(request: NextRequest) {
     filtered.forEach((c) => {
       totalSpend += c.contractValue;
       if (c.selectedBidder) {
-        // Multi-bidder string splits
         c.selectedBidder.split(",").forEach(b => {
           const trimmed = b.trim();
           if (trimmed) activeBiddersSet.add(trimmed);

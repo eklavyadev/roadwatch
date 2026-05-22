@@ -19,7 +19,16 @@ export interface ContractRecord {
   year: number;
   selectedBidderAddress?: string;
   completionPeriod?: string;
+  state: string;
 }
+
+const STATES_LIST = [
+  'Arunachal Pradesh', 'Andhra Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+  'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+  'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+  'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
+].sort();
 
 export default function ImpactPage() {
   const [contracts, setContracts] = useState<ContractRecord[]>([]);
@@ -29,10 +38,15 @@ export default function ImpactPage() {
   // Active Filter States
   const [selectedYear, setSelectedYear] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedState, setSelectedState] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Detailed Modal Record State
   const [selectedContract, setSelectedContract] = useState<ContractRecord | null>(null);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(1500);
 
   // Statistics/aggregates derived from loaded state
   const [aggregates, setAggregates] = useState({
@@ -40,6 +54,14 @@ export default function ImpactPage() {
     totalContracts: 0,
     activeBidders: 0
   });
+
+  // Derive paginated subset
+  const totalPages = Math.ceil(contracts.length / itemsPerPage) || 1;
+  const activePage = Math.min(currentPage, totalPages);
+  const paginatedContracts = contracts.slice(
+    (activePage - 1) * itemsPerPage,
+    activePage * itemsPerPage
+  );
 
   // Fetch contract data from the API
   const fetchContracts = async (seed = false) => {
@@ -49,6 +71,12 @@ export default function ImpactPage() {
       if (seed) url.searchParams.set("seed", "true");
       url.searchParams.set("category", selectedCategory);
       url.searchParams.set("year", selectedYear);
+      
+      // Pass the state filter exclusively when Category is State Highways (SH)
+      if (selectedCategory === "SH") {
+        url.searchParams.set("state", selectedState);
+      }
+      
       if (searchQuery.trim()) url.searchParams.set("search", searchQuery.trim());
 
       const res = await fetch(url.toString());
@@ -69,9 +97,15 @@ export default function ImpactPage() {
   // Re-fetch contracts whenever filter states or search changes
   useEffect(() => {
     fetchContracts(false);
-  }, [selectedCategory, selectedYear, searchQuery]);
+    setCurrentPage(1);
+  }, [selectedCategory, selectedYear, selectedState, searchQuery]);
 
-
+  // Reset state-wise filter to "all" whenever category changes away from State Highways (SH)
+  useEffect(() => {
+    if (selectedCategory !== "SH") {
+      setSelectedState("all");
+    }
+  }, [selectedCategory]);
 
   // Format amount to Lakhs / Crores for beautiful readability
   const formatINR = (value: number) => {
@@ -98,18 +132,18 @@ export default function ImpactPage() {
               Procurement & <span className="text-cyan-400">Highway Spending</span>
             </h1>
             <p className="text-slate-400 text-lg leading-relaxed max-w-2xl mx-auto">
-              Open spending ledger and tender accountability tracker mapping National Highway (NH) and State Highway (SH) contracts across India for 2025 & 2026.
+              Open spending ledger and tender accountability tracker mapping National Highway (NH) and State Highway (SH) contracts across India for 2021–2026.
             </p>
           </section>
 
-
-
           {/* ---------- SEARCH & FILTERS GATEWAY ---------- */}
-          <div className="bg-[#0f172a]/60 border border-slate-800 p-6 rounded-xl space-y-5 max-w-6xl mx-auto">
+          <div className="bg-[#0f172a]/60 border border-slate-800 p-6 rounded-xl space-y-4 max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
               
               {/* Category Tab Switcher: NH vs SH */}
-              <div className="md:col-span-5 flex bg-[#020817] border border-slate-800 p-1.5 rounded-lg">
+              <div className={`flex bg-[#020817] border border-slate-800 p-1.5 rounded-lg transition-all duration-300 ${
+                selectedCategory === "SH" ? 'md:col-span-5' : 'md:col-span-8'
+              }`}>
                 <button
                   onClick={() => setSelectedCategory("all")}
                   className={`flex-1 text-center py-2 text-xs font-bold uppercase tracking-wider rounded-md transition duration-200 ${
@@ -136,16 +170,44 @@ export default function ImpactPage() {
                 </button>
               </div>
 
-              {/* Year Filter Dropdown: 2025, 2026 */}
-              <div className="md:col-span-2 relative">
+              {/* State Filter Dropdown (State Highways Only) */}
+              {selectedCategory === "SH" && (
+                <div className="md:col-span-4 relative animate-[fadeIn_0.2s_ease-out]">
+                  <select
+                    value={selectedState}
+                    onChange={(e) => setSelectedState(e.target.value)}
+                    className="w-full bg-[#020817] border border-cyan-500/30 text-xs font-bold uppercase tracking-wider py-3 px-4 rounded-lg focus:outline-none focus:border-cyan-500 text-slate-200 appearance-none cursor-pointer hover:border-cyan-500/60 transition duration-200"
+                  >
+                    <option value="all">All States</option>
+                    {STATES_LIST.map((state) => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                    <option value="Other">Other / Unmatched</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-cyan-400 text-xs font-semibold">
+                    ▼
+                  </div>
+                </div>
+              )}
+
+              {/* Year Filter Dropdown: 2021-2026 */}
+              <div className={`relative transition-all duration-300 ${
+                selectedCategory === "SH" ? 'md:col-span-3' : 'md:col-span-4'
+              }`}>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
                   className="w-full bg-[#020817] border border-slate-800 text-xs font-bold uppercase tracking-wider py-3 px-4 rounded-lg focus:outline-none focus:border-cyan-500 text-slate-300 appearance-none cursor-pointer"
                 >
                   <option value="all">All Years</option>
-                  <option value="2025">Year 2025</option>
                   <option value="2026">Year 2026</option>
+                  <option value="2025">Year 2025</option>
+                  <option value="2024">Year 2024</option>
+                  <option value="2023">Year 2023</option>
+                  <option value="2022">Year 2022</option>
+                  <option value="2021">Year 2021</option>
                 </select>
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-500 text-xs">
                   ▼
@@ -153,7 +215,7 @@ export default function ImpactPage() {
               </div>
 
               {/* Search Bar Input */}
-              <div className="md:col-span-5 relative">
+              <div className="md:col-span-12 relative mt-1">
                 <input
                   type="text"
                   placeholder='Search by highway (e.g. "NH-44", "SH-3", etc.) or contractor...'
@@ -229,7 +291,7 @@ export default function ImpactPage() {
               </div>
             ) : contracts.length === 0 ? (
               /* --- BEAUTIFUL ELEGANT EMPTY STATE CARD --- */
-              <div className="bg-[#0f172a]/30 border border-dashed border-slate-800 rounded-xl p-16 text-center space-y-5 max-w-4xl mx-auto">
+              <div className="bg-[#0f172a]/30 border border-dashed border-slate-800 rounded-xl p-16 text-center space-y-5 max-w-4xl mx-auto animate-[fadeIn_0.3s_ease-out]">
                 <div className="text-5xl opacity-40">📭</div>
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold text-white">Highway Registry is Currently Empty</h3>
@@ -240,7 +302,7 @@ export default function ImpactPage() {
               </div>
             ) : (
               /* --- DYNAMIC CONTRACT DATA TABLE --- */
-              <div className="bg-[#0f172a]/60 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+              <div className="bg-[#0f172a]/60 border border-slate-800 rounded-xl overflow-hidden shadow-2xl animate-[fadeIn_0.3s_ease-out]">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
@@ -254,7 +316,7 @@ export default function ImpactPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/40 text-slate-300">
-                      {contracts.map((c) => {
+                      {paginatedContracts.map((c) => {
                         const dateFormatted = new Date(c.contractDate).toLocaleDateString("en-IN", {
                           day: '2-digit',
                           month: 'short',
@@ -298,6 +360,139 @@ export default function ImpactPage() {
                       })}
                     </tbody>
                   </table>
+                </div>
+
+                {/* ---------- PAGINATION CONTROLS FOOTER ---------- */}
+                <div className="bg-[#0f172a]/80 border-t border-slate-800 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  
+                  {/* Left portion: showing items info and page size selector */}
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
+                    <div>
+                      Showing <span className="font-semibold text-white">{contracts.length === 0 ? 0 : (activePage - 1) * itemsPerPage + 1}</span> to{" "}
+                      <span className="font-semibold text-white">
+                        {Math.min(activePage * itemsPerPage, contracts.length)}
+                      </span>{" "}
+                      of <span className="font-semibold text-white">{contracts.length}</span> contracts
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <span>Show</span>
+                      <select
+                        value={itemsPerPage}
+                        onChange={(e) => {
+                          setItemsPerPage(Number(e.target.value));
+                          setCurrentPage(1);
+                        }}
+                        className="bg-[#020817] border border-slate-800 rounded px-2 py-1 focus:outline-none focus:border-cyan-500 text-slate-300 cursor-pointer text-xs"
+                      >
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                        <option value={500}>500</option>
+                        <option value={1500}>1500</option>
+                      </select>
+                      <span>per page</span>
+                    </div>
+                  </div>
+
+                  {/* Right portion: page navigation buttons */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-1">
+                      {/* Previous Page Button */}
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={activePage === 1}
+                        className="px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-semibold transition bg-[#020817] hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed hover:border-cyan-500/50"
+                      >
+                        ◀ Prev
+                      </button>
+
+                      {/* Dynamic page numbers with smart truncation for premium UX */}
+                      {(() => {
+                        const pageNumbers = [];
+                        const maxVisible = 5;
+                        let startPage = Math.max(1, activePage - 2);
+                        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+                        if (endPage - startPage < maxVisible - 1) {
+                          startPage = Math.max(1, endPage - maxVisible + 1);
+                        }
+
+                        if (startPage > 1) {
+                          pageNumbers.push(
+                            <button
+                              key={1}
+                              onClick={() => setCurrentPage(1)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition border ${
+                                activePage === 1
+                                  ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
+                                  : 'bg-[#020817] border-slate-800 text-slate-400 hover:text-white hover:border-cyan-500/50'
+                              }`}
+                            >
+                              1
+                            </button>
+                          );
+                          if (startPage > 2) {
+                            pageNumbers.push(
+                              <span key="dots-start" className="px-2 text-slate-600 text-xs">
+                                ...
+                              </span>
+                            );
+                          }
+                        }
+
+                        for (let i = startPage; i <= endPage; i++) {
+                          pageNumbers.push(
+                            <button
+                              key={i}
+                              onClick={() => setCurrentPage(i)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition border ${
+                                activePage === i
+                                  ? 'bg-cyan-500 text-[#020817] border-cyan-500'
+                                  : 'bg-[#020817] border-slate-800 text-slate-400 hover:text-white hover:border-cyan-500/50'
+                              }`}
+                            >
+                              {i}
+                            </button>
+                          );
+                        }
+
+                        if (endPage < totalPages) {
+                          if (endPage < totalPages - 1) {
+                            pageNumbers.push(
+                              <span key="dots-end" className="px-2 text-slate-600 text-xs">
+                                ...
+                              </span>
+                            );
+                          }
+                          pageNumbers.push(
+                            <button
+                              key={totalPages}
+                              onClick={() => setCurrentPage(totalPages)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition border ${
+                                activePage === totalPages
+                                  ? 'bg-cyan-500 text-[#020817] border-cyan-500'
+                                  : 'bg-[#020817] border-slate-800 text-slate-400 hover:text-white hover:border-cyan-500/50'
+                              }`}
+                            >
+                              {totalPages}
+                            </button>
+                          );
+                        }
+
+                        return pageNumbers;
+                      })()}
+
+                      {/* Next Page Button */}
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={activePage === totalPages}
+                        className="px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-semibold transition bg-[#020817] hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed hover:border-cyan-500/50"
+                      >
+                        Next ▶
+                      </button>
+                    </div>
+                  )}
+
                 </div>
               </div>
             )}
