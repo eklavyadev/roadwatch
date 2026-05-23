@@ -123,6 +123,10 @@ export default function ChatWidget() {
       const data = await response.json();
       setLoading(false);
 
+      if (!response.ok) {
+        throw new Error(data.error || `Server responded with status ${response.status}`);
+      }
+
       if (data.content === '__TRIGGER_REPORT_FLOW__') {
         // Intercept and launch reporting wizard
         setReporting({ step: 'type' });
@@ -296,7 +300,7 @@ export default function ChatWidget() {
 
   // Clean Markdown Renderer (Very basic, handles tables, bullet lists, strong tags)
   const renderMessageContent = (content: string) => {
-    if (content === '__TRIGGER_REPORT_FLOW__') return null;
+    if (!content || content === '__TRIGGER_REPORT_FLOW__') return null;
 
     const lines = content.split('\n');
     let inTable = false;
@@ -423,6 +427,7 @@ export default function ChatWidget() {
 
   // Safe inline formatter (handles **bold**, *italic*, `code`)
   const parseInlineMarkdown = (text: string) => {
+    if (typeof text !== 'string') return null;
     let parts: React.ReactNode[] = [text];
 
     // **bold**
