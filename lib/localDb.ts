@@ -19,11 +19,15 @@ const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
 
 // Ensure db and upload folders exist
 function initializeDb() {
-  if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify([], null, 2));
+  try {
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(DB_FILE)) {
+      fs.writeFileSync(DB_FILE, JSON.stringify([], null, 2));
+    }
+  } catch (error) {
+    console.warn('Failed to initialize local DB on read-only serverless filesystem:', error);
   }
 }
 

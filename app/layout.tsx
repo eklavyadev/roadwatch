@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ChatWidget from "@/components/ChatWidget";
 
 const geistMono = Geist_Mono({
   subsets: ["latin"],
@@ -24,6 +25,7 @@ export default function RootLayout({
         className={`${geistMono.variable} font-mono bg-[#020817] text-white antialiased`}
       >
         {children}
+        <ChatWidget />
       </body>
     </html>
   );
