@@ -5,6 +5,8 @@ import path from "path";
 const CONTRACTS_FILE = path.join(process.cwd(), "contracts_store.json");
 const RAW_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full.json");
 const RAW_TRIPURA_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_Tripura.json");
+const RAW_MEGHALAYA_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_24_Meghalaya.json");
+const RAW_MIZORAM_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_24_Mizoram.json");
 const RAW_NHAI_TENDERS_FILE = path.join(process.cwd(), "..", "nhai_tenders.json");
 
 export interface ContractRecord {
@@ -225,6 +227,126 @@ function parseAndStoreRealTenders(force = false): ContractRecord[] {
       }
     } catch (e) {
       console.error("Error reading/parsing RAW_TRIPURA_TENDERS_FILE:", e);
+    }
+  }
+
+  // 1.6. Process cppp_tenders_full_24_Meghalaya.json (always classified as state highway 'SH')
+  if (fs.existsSync(RAW_MEGHALAYA_TENDERS_FILE)) {
+    try {
+      const rawData = fs.readFileSync(RAW_MEGHALAYA_TENDERS_FILE, "utf8");
+      const parsedData = JSON.parse(rawData);
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach((item: any, index: number) => {
+          const s = item.structured_data || {};
+          const orgName = cleanText(s['Organisation Name'] || '');
+          const refNo = cleanText(s['Tender Ref. No.'] || '');
+          const description = cleanText(s['Tender Description'] || '');
+          const document = cleanText(s['Tender Document'] || '');
+          const type = cleanText(s['Tender Type'] || 'Works');
+          const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
+          const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
+          const valStr = (s['Contract Value'] || s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
+          const value = parseFloat(valStr) || 0;
+          const published = cleanText(s['Award Published Date'] || s['Published Date'] || '');
+          const contractDate = cleanText(s['Contract Date'] || '');
+          const address = cleanText(s['Address of the selected bidder(s)'] || '');
+          const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
+
+          let year = 2024;
+          const dateStringForYear = `${contractDate} ${published} ${refNo}`;
+          const yearMatch = dateStringForYear.match(/\b(2021|2022|2023|2024|2025|2026)\b/);
+          if (yearMatch) {
+            year = parseInt(yearMatch[1], 10);
+          }
+
+          const category: "NH" | "SH" = 'SH';
+          const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
+
+          if (!seenKeys.has(uniqueKey)) {
+            seenKeys.add(uniqueKey);
+            contracts.push({
+              id: `meghalaya_${index + 1}`,
+              organisationName: orgName,
+              tenderRefNo: refNo,
+              tenderDescription: description,
+              tenderDocument: document,
+              tenderType: type,
+              bidsReceived: bids,
+              selectedBidder: bidder,
+              contractValue: value,
+              publishedDate: published,
+              contractDate: contractDate,
+              category: category,
+              year: year,
+              selectedBidderAddress: address,
+              completionPeriod: completion,
+              state: 'Meghalaya'
+            });
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Error reading/parsing RAW_MEGHALAYA_TENDERS_FILE:", e);
+    }
+  }
+
+  // 1.7. Process cppp_tenders_full_24_Mizoram.json (always classified as state highway 'SH')
+  if (fs.existsSync(RAW_MIZORAM_TENDERS_FILE)) {
+    try {
+      const rawData = fs.readFileSync(RAW_MIZORAM_TENDERS_FILE, "utf8");
+      const parsedData = JSON.parse(rawData);
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach((item: any, index: number) => {
+          const s = item.structured_data || {};
+          const orgName = cleanText(s['Organisation Name'] || '');
+          const refNo = cleanText(s['Tender Ref. No.'] || '');
+          const description = cleanText(s['Tender Description'] || '');
+          const document = cleanText(s['Tender Document'] || '');
+          const type = cleanText(s['Tender Type'] || 'Works');
+          const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
+          const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
+          const valStr = (s['Contract Value'] || s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
+          const value = parseFloat(valStr) || 0;
+          const published = cleanText(s['Award Published Date'] || s['Published Date'] || '');
+          const contractDate = cleanText(s['Contract Date'] || '');
+          const address = cleanText(s['Address of the selected bidder(s)'] || '');
+          const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
+
+          let year = 2024;
+          const dateStringForYear = `${contractDate} ${published} ${refNo}`;
+          const yearMatch = dateStringForYear.match(/\b(2021|2022|2023|2024|2025|2026)\b/);
+          if (yearMatch) {
+            year = parseInt(yearMatch[1], 10);
+          }
+
+          const category: "NH" | "SH" = 'SH';
+          const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
+
+          if (!seenKeys.has(uniqueKey)) {
+            seenKeys.add(uniqueKey);
+            contracts.push({
+              id: `mizoram_${index + 1}`,
+              organisationName: orgName,
+              tenderRefNo: refNo,
+              tenderDescription: description,
+              tenderDocument: document,
+              tenderType: type,
+              bidsReceived: bids,
+              selectedBidder: bidder,
+              contractValue: value,
+              publishedDate: published,
+              contractDate: contractDate,
+              category: category,
+              year: year,
+              selectedBidderAddress: address,
+              completionPeriod: completion,
+              state: 'Mizoram'
+            });
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Error reading/parsing RAW_MIZORAM_TENDERS_FILE:", e);
     }
   }
 
