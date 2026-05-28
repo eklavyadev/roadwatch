@@ -15,6 +15,14 @@ const RAW_ASSAM_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_As
 const RAW_GOA_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_Goa.json");
 const RAW_HIMACHAL_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_Himachal_Pradesh.json");
 const RAW_KERALA_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_Kerala.json");
+const RAW_MP_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_MadhyaPradesh.json");
+const RAW_MAHARASHTRA_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_Maharashtra.json");
+const RAW_ODISHA_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_Odisha.json");
+const RAW_PUNJAB_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_Punjab.json");
+const RAW_RAJASTHAN_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_Rajasthan.json");
+const RAW_TN_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_Tamil.Nadu.json");
+const RAW_UTTARAKHAND_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_Uttarakhand.json");
+const RAW_WB_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_West_Bengal.json");
 const RAW_NHAI_TENDERS_FILE = path.join(process.cwd(), "..", "nhai_tenders.json");
 
 export interface ContractRecord {
@@ -820,6 +828,334 @@ function parseAndStoreRealTenders(force = false): ContractRecord[] {
         });
       }
     } catch (e) { console.error("Error reading/parsing RAW_KERALA_TENDERS_FILE:", e); }
+  }
+
+  // 1.16. Process cppp_tenders_full_26_MadhyaPradesh.json
+  if (fs.existsSync(RAW_MP_TENDERS_FILE)) {
+    try {
+      const rawData = fs.readFileSync(RAW_MP_TENDERS_FILE, "utf8");
+      const parsedData = JSON.parse(rawData);
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach((item: any, index: number) => {
+          const s = item.structured_data || {};
+          const orgName = cleanText(s['Organisation Name'] || '');
+          const refNo = cleanText(s['Tender Ref. No.'] || '');
+          const description = cleanText(s['Tender Description'] || '');
+          const document = cleanText(s['Tender Document'] || '');
+          const type = cleanText(s['Tender Type'] || 'Works');
+          const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
+          const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
+          const valStr = (s['Contract Value'] || s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
+          const value = parseFloat(valStr) || 0;
+          const published = cleanText(s['Award Published Date'] || s['Published Date'] || '');
+          const contractDate = cleanText(s['Contract Date'] || '');
+          const address = cleanText(s['Address of the selected bidder(s)'] || '');
+          const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
+          let year = 2026;
+          const yearMatch = `${contractDate} ${published} ${refNo}`.match(/\b(2021|2022|2023|2024|2025|2026)\b/);
+          if (yearMatch) year = parseInt(yearMatch[1], 10);
+          
+          const category: "NH" | "SH" = 'SH';
+          const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
+          if (!seenKeys.has(uniqueKey)) {
+            seenKeys.add(uniqueKey);
+            contracts.push({
+              id: `mp_${index + 1}`, organisationName: orgName, tenderRefNo: refNo, tenderDescription: description,
+              tenderDocument: document, tenderType: type, bidsReceived: bids, selectedBidder: bidder, contractValue: value,
+              publishedDate: published, contractDate: contractDate, category: category, year: year,
+              selectedBidderAddress: address, completionPeriod: completion, state: 'Madhya Pradesh'
+            });
+          }
+        });
+      }
+    } catch (e) { console.error("Error reading/parsing RAW_MP_TENDERS_FILE:", e); }
+  }
+
+  // 1.17. Process cppp_tenders_full_26_Maharashtra.json
+  if (fs.existsSync(RAW_MAHARASHTRA_TENDERS_FILE)) {
+    try {
+      const rawData = fs.readFileSync(RAW_MAHARASHTRA_TENDERS_FILE, "utf8");
+      const parsedData = JSON.parse(rawData);
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach((item: any, index: number) => {
+          const s = item.structured_data || {};
+          const orgName = cleanText(s['Organisation Name'] || '');
+          const refNo = cleanText(s['Tender Ref. No.'] || '');
+          const description = cleanText(s['Tender Description'] || '');
+          const document = cleanText(s['Tender Document'] || '');
+          const type = cleanText(s['Tender Type'] || 'Works');
+          const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
+          const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
+          const valStr = (s['Contract Value'] || s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
+          const value = parseFloat(valStr) || 0;
+          const published = cleanText(s['Award Published Date'] || s['Published Date'] || '');
+          const contractDate = cleanText(s['Contract Date'] || '');
+          const address = cleanText(s['Address of the selected bidder(s)'] || '');
+          const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
+          let year = 2026;
+          const yearMatch = `${contractDate} ${published} ${refNo}`.match(/\b(2021|2022|2023|2024|2025|2026)\b/);
+          if (yearMatch) year = parseInt(yearMatch[1], 10);
+          
+          const category: "NH" | "SH" = 'SH';
+          const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
+          if (!seenKeys.has(uniqueKey)) {
+            seenKeys.add(uniqueKey);
+            contracts.push({
+              id: `maharashtra_${index + 1}`, organisationName: orgName, tenderRefNo: refNo, tenderDescription: description,
+              tenderDocument: document, tenderType: type, bidsReceived: bids, selectedBidder: bidder, contractValue: value,
+              publishedDate: published, contractDate: contractDate, category: category, year: year,
+              selectedBidderAddress: address, completionPeriod: completion, state: 'Maharashtra'
+            });
+          }
+        });
+      }
+    } catch (e) { console.error("Error reading/parsing RAW_MAHARASHTRA_TENDERS_FILE:", e); }
+  }
+
+  // 1.18. Process cppp_tenders_full_26_Odisha.json
+  if (fs.existsSync(RAW_ODISHA_TENDERS_FILE)) {
+    try {
+      const rawData = fs.readFileSync(RAW_ODISHA_TENDERS_FILE, "utf8");
+      const parsedData = JSON.parse(rawData);
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach((item: any, index: number) => {
+          const s = item.structured_data || {};
+          const orgName = cleanText(s['Organisation Name'] || '');
+          const refNo = cleanText(s['Tender Ref. No.'] || '');
+          const description = cleanText(s['Tender Description'] || '');
+          const document = cleanText(s['Tender Document'] || '');
+          const type = cleanText(s['Tender Type'] || 'Works');
+          const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
+          const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
+          const valStr = (s['Contract Value'] || s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
+          const value = parseFloat(valStr) || 0;
+          const published = cleanText(s['Award Published Date'] || s['Published Date'] || '');
+          const contractDate = cleanText(s['Contract Date'] || '');
+          const address = cleanText(s['Address of the selected bidder(s)'] || '');
+          const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
+          let year = 2026;
+          const yearMatch = `${contractDate} ${published} ${refNo}`.match(/\b(2021|2022|2023|2024|2025|2026)\b/);
+          if (yearMatch) year = parseInt(yearMatch[1], 10);
+          
+          const category: "NH" | "SH" = 'SH';
+          const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
+          if (!seenKeys.has(uniqueKey)) {
+            seenKeys.add(uniqueKey);
+            contracts.push({
+              id: `odisha_${index + 1}`, organisationName: orgName, tenderRefNo: refNo, tenderDescription: description,
+              tenderDocument: document, tenderType: type, bidsReceived: bids, selectedBidder: bidder, contractValue: value,
+              publishedDate: published, contractDate: contractDate, category: category, year: year,
+              selectedBidderAddress: address, completionPeriod: completion, state: 'Odisha'
+            });
+          }
+        });
+      }
+    } catch (e) { console.error("Error reading/parsing RAW_ODISHA_TENDERS_FILE:", e); }
+  }
+
+  // 1.19. Process cppp_tenders_full_26_Punjab.json
+  if (fs.existsSync(RAW_PUNJAB_TENDERS_FILE)) {
+    try {
+      const rawData = fs.readFileSync(RAW_PUNJAB_TENDERS_FILE, "utf8");
+      const parsedData = JSON.parse(rawData);
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach((item: any, index: number) => {
+          const s = item.structured_data || {};
+          const orgName = cleanText(s['Organisation Name'] || '');
+          const refNo = cleanText(s['Tender Ref. No.'] || '');
+          const description = cleanText(s['Tender Description'] || '');
+          const document = cleanText(s['Tender Document'] || '');
+          const type = cleanText(s['Tender Type'] || 'Works');
+          const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
+          const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
+          const valStr = (s['Contract Value'] || s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
+          const value = parseFloat(valStr) || 0;
+          const published = cleanText(s['Award Published Date'] || s['Published Date'] || '');
+          const contractDate = cleanText(s['Contract Date'] || '');
+          const address = cleanText(s['Address of the selected bidder(s)'] || '');
+          const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
+          let year = 2026;
+          const yearMatch = `${contractDate} ${published} ${refNo}`.match(/\b(2021|2022|2023|2024|2025|2026)\b/);
+          if (yearMatch) year = parseInt(yearMatch[1], 10);
+          
+          const category: "NH" | "SH" = 'SH';
+          const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
+          if (!seenKeys.has(uniqueKey)) {
+            seenKeys.add(uniqueKey);
+            contracts.push({
+              id: `punjab_${index + 1}`, organisationName: orgName, tenderRefNo: refNo, tenderDescription: description,
+              tenderDocument: document, tenderType: type, bidsReceived: bids, selectedBidder: bidder, contractValue: value,
+              publishedDate: published, contractDate: contractDate, category: category, year: year,
+              selectedBidderAddress: address, completionPeriod: completion, state: 'Punjab'
+            });
+          }
+        });
+      }
+    } catch (e) { console.error("Error reading/parsing RAW_PUNJAB_TENDERS_FILE:", e); }
+  }
+
+  // 1.20. Process cppp_tenders_full_26_Rajasthan.json
+  if (fs.existsSync(RAW_RAJASTHAN_TENDERS_FILE)) {
+    try {
+      const rawData = fs.readFileSync(RAW_RAJASTHAN_TENDERS_FILE, "utf8");
+      const parsedData = JSON.parse(rawData);
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach((item: any, index: number) => {
+          const s = item.structured_data || {};
+          const orgName = cleanText(s['Organisation Name'] || '');
+          const refNo = cleanText(s['Tender Ref. No.'] || '');
+          const description = cleanText(s['Tender Description'] || '');
+          const document = cleanText(s['Tender Document'] || '');
+          const type = cleanText(s['Tender Type'] || 'Works');
+          const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
+          const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
+          const valStr = (s['Contract Value'] || s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
+          const value = parseFloat(valStr) || 0;
+          const published = cleanText(s['Award Published Date'] || s['Published Date'] || '');
+          const contractDate = cleanText(s['Contract Date'] || '');
+          const address = cleanText(s['Address of the selected bidder(s)'] || '');
+          const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
+          let year = 2026;
+          const yearMatch = `${contractDate} ${published} ${refNo}`.match(/\b(2021|2022|2023|2024|2025|2026)\b/);
+          if (yearMatch) year = parseInt(yearMatch[1], 10);
+          
+          const category: "NH" | "SH" = 'SH';
+          const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
+          if (!seenKeys.has(uniqueKey)) {
+            seenKeys.add(uniqueKey);
+            contracts.push({
+              id: `rajasthan_${index + 1}`, organisationName: orgName, tenderRefNo: refNo, tenderDescription: description,
+              tenderDocument: document, tenderType: type, bidsReceived: bids, selectedBidder: bidder, contractValue: value,
+              publishedDate: published, contractDate: contractDate, category: category, year: year,
+              selectedBidderAddress: address, completionPeriod: completion, state: 'Rajasthan'
+            });
+          }
+        });
+      }
+    } catch (e) { console.error("Error reading/parsing RAW_RAJASTHAN_TENDERS_FILE:", e); }
+  }
+
+  // 1.21. Process cppp_tenders_full_26_Tamil.Nadu.json
+  if (fs.existsSync(RAW_TN_TENDERS_FILE)) {
+    try {
+      const rawData = fs.readFileSync(RAW_TN_TENDERS_FILE, "utf8");
+      const parsedData = JSON.parse(rawData);
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach((item: any, index: number) => {
+          const s = item.structured_data || {};
+          const orgName = cleanText(s['Organisation Name'] || '');
+          const refNo = cleanText(s['Tender Ref. No.'] || '');
+          const description = cleanText(s['Tender Description'] || '');
+          const document = cleanText(s['Tender Document'] || '');
+          const type = cleanText(s['Tender Type'] || 'Works');
+          const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
+          const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
+          const valStr = (s['Contract Value'] || s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
+          const value = parseFloat(valStr) || 0;
+          const published = cleanText(s['Award Published Date'] || s['Published Date'] || '');
+          const contractDate = cleanText(s['Contract Date'] || '');
+          const address = cleanText(s['Address of the selected bidder(s)'] || '');
+          const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
+          let year = 2026;
+          const yearMatch = `${contractDate} ${published} ${refNo}`.match(/\b(2021|2022|2023|2024|2025|2026)\b/);
+          if (yearMatch) year = parseInt(yearMatch[1], 10);
+          
+          const category: "NH" | "SH" = 'SH';
+          const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
+          if (!seenKeys.has(uniqueKey)) {
+            seenKeys.add(uniqueKey);
+            contracts.push({
+              id: `tn_${index + 1}`, organisationName: orgName, tenderRefNo: refNo, tenderDescription: description,
+              tenderDocument: document, tenderType: type, bidsReceived: bids, selectedBidder: bidder, contractValue: value,
+              publishedDate: published, contractDate: contractDate, category: category, year: year,
+              selectedBidderAddress: address, completionPeriod: completion, state: 'Tamil Nadu'
+            });
+          }
+        });
+      }
+    } catch (e) { console.error("Error reading/parsing RAW_TN_TENDERS_FILE:", e); }
+  }
+
+  // 1.22. Process cppp_tenders_full_26_Uttarakhand.json
+  if (fs.existsSync(RAW_UTTARAKHAND_TENDERS_FILE)) {
+    try {
+      const rawData = fs.readFileSync(RAW_UTTARAKHAND_TENDERS_FILE, "utf8");
+      const parsedData = JSON.parse(rawData);
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach((item: any, index: number) => {
+          const s = item.structured_data || {};
+          const orgName = cleanText(s['Organisation Name'] || '');
+          const refNo = cleanText(s['Tender Ref. No.'] || '');
+          const description = cleanText(s['Tender Description'] || '');
+          const document = cleanText(s['Tender Document'] || '');
+          const type = cleanText(s['Tender Type'] || 'Works');
+          const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
+          const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
+          const valStr = (s['Contract Value'] || s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
+          const value = parseFloat(valStr) || 0;
+          const published = cleanText(s['Award Published Date'] || s['Published Date'] || '');
+          const contractDate = cleanText(s['Contract Date'] || '');
+          const address = cleanText(s['Address of the selected bidder(s)'] || '');
+          const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
+          let year = 2026;
+          const yearMatch = `${contractDate} ${published} ${refNo}`.match(/\b(2021|2022|2023|2024|2025|2026)\b/);
+          if (yearMatch) year = parseInt(yearMatch[1], 10);
+          
+          const category: "NH" | "SH" = 'SH';
+          const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
+          if (!seenKeys.has(uniqueKey)) {
+            seenKeys.add(uniqueKey);
+            contracts.push({
+              id: `uttarakhand_${index + 1}`, organisationName: orgName, tenderRefNo: refNo, tenderDescription: description,
+              tenderDocument: document, tenderType: type, bidsReceived: bids, selectedBidder: bidder, contractValue: value,
+              publishedDate: published, contractDate: contractDate, category: category, year: year,
+              selectedBidderAddress: address, completionPeriod: completion, state: 'Uttarakhand'
+            });
+          }
+        });
+      }
+    } catch (e) { console.error("Error reading/parsing RAW_UTTARAKHAND_TENDERS_FILE:", e); }
+  }
+
+  // 1.23. Process cppp_tenders_full_26_West_Bengal.json
+  if (fs.existsSync(RAW_WB_TENDERS_FILE)) {
+    try {
+      const rawData = fs.readFileSync(RAW_WB_TENDERS_FILE, "utf8");
+      const parsedData = JSON.parse(rawData);
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach((item: any, index: number) => {
+          const s = item.structured_data || {};
+          const orgName = cleanText(s['Organisation Name'] || '');
+          const refNo = cleanText(s['Tender Ref. No.'] || '');
+          const description = cleanText(s['Tender Description'] || '');
+          const document = cleanText(s['Tender Document'] || '');
+          const type = cleanText(s['Tender Type'] || 'Works');
+          const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
+          const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
+          const valStr = (s['Contract Value'] || s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
+          const value = parseFloat(valStr) || 0;
+          const published = cleanText(s['Award Published Date'] || s['Published Date'] || '');
+          const contractDate = cleanText(s['Contract Date'] || '');
+          const address = cleanText(s['Address of the selected bidder(s)'] || '');
+          const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
+          let year = 2026;
+          const yearMatch = `${contractDate} ${published} ${refNo}`.match(/\b(2021|2022|2023|2024|2025|2026)\b/);
+          if (yearMatch) year = parseInt(yearMatch[1], 10);
+          
+          const category: "NH" | "SH" = 'SH';
+          const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
+          if (!seenKeys.has(uniqueKey)) {
+            seenKeys.add(uniqueKey);
+            contracts.push({
+              id: `wb_${index + 1}`, organisationName: orgName, tenderRefNo: refNo, tenderDescription: description,
+              tenderDocument: document, tenderType: type, bidsReceived: bids, selectedBidder: bidder, contractValue: value,
+              publishedDate: published, contractDate: contractDate, category: category, year: year,
+              selectedBidderAddress: address, completionPeriod: completion, state: 'West Bengal'
+            });
+          }
+        });
+      }
+    } catch (e) { console.error("Error reading/parsing RAW_WB_TENDERS_FILE:", e); }
   }
 
   // 2. Process nhai_tenders.json
