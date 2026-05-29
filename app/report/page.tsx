@@ -214,21 +214,8 @@ export default function ReportPotholePage() {
         setLng(longitude);
         setAccuracy(Math.round(pos.coords.accuracy));
 
-        try {
-          const res = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
-          );
-
-          const data = await res.json();
-
-          if (data.status === 'OK' && data.results?.length) {
-            setAutoLocation(data.results[0].formatted_address);
-          } else {
-            setAutoLocation('GPS reported location');
-          }
-        } catch {
-          setAutoLocation('GPS reported location');
-        }
+        // Simplified location handling (Google Maps API disabled)
+        setAutoLocation(`Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`);
       },
       () => {
         setError('Location permission denied');

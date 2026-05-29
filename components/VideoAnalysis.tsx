@@ -1,12 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import {
-  GoogleMap,
-  Marker,
-  InfoWindow,
-  useLoadScript,
-} from '@react-google-maps/api';
 
 const MODEL_API =
   process.env.NEXT_PUBLIC_AI_SERVER_URL ?? '';
@@ -94,9 +88,7 @@ function DetailPanel({ analysis }: { analysis: Analysis }) {
   const [jsonOpen, setJsonOpen] = useState(false);
   const [copied,   setCopied]   = useState(false);
   const [showAll,  setShowAll]  = useState(false);
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-  });
+  // Google Maps script loading removed due to billing constraints
 
   const allPotholes  = analysis.potholes;
   const confirmed    = allPotholes.filter((p) => p.confidence >= CONF_THRESHOLD);
@@ -139,68 +131,10 @@ function DetailPanel({ analysis }: { analysis: Analysis }) {
         ))}
       </div>
 
-      {/* Map */}
-      {visible.length > 0 && isLoaded ? (
-        <div className="rounded-lg overflow-hidden border border-slate-700">
-          <GoogleMap
-            mapContainerStyle={{ width: '100%', height: '360px' }}
-            zoom={16}
-            center={{ lat: visible[0].latitude, lng: visible[0].longitude }}
-            onLoad={(map) => {
-              if (visible.length > 1) {
-                const bounds = new window.google.maps.LatLngBounds();
-                visible.forEach((p) =>
-                  bounds.extend({ lat: p.latitude, lng: p.longitude })
-                );
-                map.fitBounds(bounds);
-              }
-            }}
-            options={{
-              styles: [
-                { elementType: 'geometry',           stylers: [{ color: '#1e293b' }] },
-                { elementType: 'labels.text.fill',   stylers: [{ color: '#94a3b8' }] },
-                { elementType: 'labels.text.stroke', stylers: [{ color: '#0f172a' }] },
-                // Hide all POI markers (parks, courts, restaurants, etc.)
-                { featureType: 'poi',                stylers: [{ visibility: 'off' }] },
-                // Hide transit icons (bus stops, metro, etc.)
-                { featureType: 'transit',            stylers: [{ visibility: 'off' }] },
-              ],
-            }}
-          >
-            {visible.map((p) => (
-              <Marker
-                key={p.id}
-                position={{ lat: p.latitude, lng: p.longitude }}
-                onClick={() => setActive(p)}
-                icon={markerIcon(confColour(p.confidence))}
-              />
-            ))}
-            {active && (
-              <InfoWindow
-                position={{ lat: active.latitude, lng: active.longitude }}
-                onCloseClick={() => setActive(null)}
-              >
-                <div style={{ color: '#0f172a', fontSize: '12px', minWidth: '160px' }}>
-                  <p style={{ fontWeight: 700, marginBottom: 4 }}>🕳️ Pothole #{active.id}</p>
-                  <p>Confidence: <b>{(active.confidence * 100).toFixed(1)}%</b></p>
-                  <p>At: {active.time_sec}s</p>
-                  <p style={{ fontSize: '10px', color: '#64748b', marginTop: 4 }}>
-                    {active.latitude.toFixed(6)}, {active.longitude.toFixed(6)}
-                  </p>
-                </div>
-              </InfoWindow>
-            )}
-          </GoogleMap>
-        </div>
-      ) : allPotholes.length === 0 ? (
-        <div className="border border-dashed border-slate-700 rounded-lg p-8 text-center text-slate-500 text-sm">
-          No potholes detected in this video.
-        </div>
-      ) : (
-        <div className="h-40 flex items-center justify-center text-slate-500 text-sm">
-          Loading map…
-        </div>
-      )}
+      {/* Map (disabled) */}
+      <div className="h-64 md:h-auto min-h-[300px] flex items-center justify-center text-gray-400 border border-slate-700 rounded-lg bg-[#0f172a]">
+        Map view unavailable (Google Maps billing not configured)
+      </div>
 
       {/* Legend + show more toggle */}
       {allPotholes.length > 0 && (
