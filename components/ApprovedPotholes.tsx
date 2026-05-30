@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getTransparencyDetails } from '@/lib/transparencyEngine';
 
 type Report = {
   id: string;
@@ -116,8 +115,6 @@ export function ApprovedReports() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {visibleReports.map((r) => {
           const level = Number(r.impact_level);
-          const details = getTransparencyDetails(r.lat, r.lng, r.id, level);
-
           return (
             <Link
               key={r.id}

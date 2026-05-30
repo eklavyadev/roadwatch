@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getTransparencyDetails } from '@/lib/transparencyEngine';
 
 const IMPACT_LABEL: Record<number, string> = {
   1: 'Low',
@@ -49,27 +48,22 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
     );
   }
 
-  const details = getTransparencyDetails(
-    report.lat,
-    report.lng,
-    report.id,
-    report.impact_level
-  );
 
-  const complaintSubject = encodeURIComponent(`[RoadWatch] Road Quality Issue Reported - ${details.roadName}`);
+  const complaintSubject = encodeURIComponent(`[RoadWatch] Road Issue Reported at ${report.location}`);
   const complaintBody = encodeURIComponent(
-    `Dear ${details.executiveEngineer},\n\n` +
+    `Hello,\n\n` +
     `I am writing to report a verified infrastructure issue via the RoadWatch Transparency Portal.\n\n` +
     `Location: ${report.location}\n` +
     `Coordinates: ${report.lat?.toFixed(5)}, ${report.lng?.toFixed(5)}\n` +
     `Issue Type: ${TYPE_LABEL[report.type] || report.type}\n` +
     `Impact Level: ${IMPACT_LABEL[report.impact_level] || report.impact_level}\n` +
     `Reported on: ${new Date(report.created_at).toLocaleDateString()}\n\n` +
-    `The presence of severe road defects warrants immediate engineering inspection and rectification.\n\n` +
+    `This issue requires prompt inspection and rectification.\n\n` +
     `Sincerely,\n` +
     `Concerned Citizen (Via RoadWatch)`
   );
-  const mailtoUrl = `mailto:${details.engineerEmail}?subject=${complaintSubject}&body=${complaintBody}`;
+  const governingBody = report.governing_body || 'PWD';
+  const mailtoUrl = `mailto:?subject=${complaintSubject}&body=${complaintBody}`;
 
   return (
     <div className="min-h-screen bg-[#020817] text-white px-6 py-10">
@@ -121,7 +115,7 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
             href={mailtoUrl}
             className="flex-1 rounded bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-500 transition shadow-lg text-center flex items-center justify-center gap-2"
           >
-            ✉️ Email {details.authorityBody || 'Authority'}
+            ✉️ Email {governingBody} Authority
           </a>
           <a
             href="#"

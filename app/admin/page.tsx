@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import VideoAnalysis from '@/components/VideoAnalysis';
-import { getTransparencyDetails } from '@/lib/transparencyEngine';
+
 
 /* ---------- TYPES ---------- */
 type Report = {
@@ -229,20 +229,6 @@ export default function AdminPage() {
                 <p className="text-xs text-slate-400">
                   {IMPACT_DESCRIPTION[r.type]?.[r.impact_level]}
                 </p>
-
-                {(() => {
-                  const details = getTransparencyDetails(r.lat, r.lng, r.id, r.impact_level);
-                  return (
-                    <div className="mt-3 bg-[#020817]/65 p-3 rounded border border-slate-800 text-[11px] space-y-1">
-                      <p className="text-cyan-400 font-semibold uppercase tracking-wider text-[10px] mb-1">🪙 Public Spending Audit</p>
-                      <p><b>Road:</b> {details.roadName} ({details.roadType})</p>
-                      <p><b>Contractor:</b> {details.contractorName} ({details.lastRelayingDate})</p>
-                      <p><b>Budget:</b> {details.currencySymbol}{details.amountSpent.toLocaleString()} spent / {details.currencySymbol}{details.amountSanctioned.toLocaleString()} sanctioned</p>
-                      <p><b>Audit Score:</b> <span className={`font-bold ${details.transparencyScore >= 80 ? 'text-cyan-400' : details.transparencyScore >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>{details.transparencyScore}/100</span></p>
-                      <p><b>Routing To:</b> {details.executiveEngineer} ({details.engineerEmail})</p>
-                    </div>
-                  );
-                })()}
 
                 <p className="text-xs text-slate-500 pt-1">
                   {new Date(r.created_at).toLocaleString()}
