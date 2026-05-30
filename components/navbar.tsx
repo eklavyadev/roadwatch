@@ -11,6 +11,7 @@ const navigation = [
   { name: 'API Docs', href: '/api' },
   { name: 'Tech Stack', href: '/tech' },
   { name: 'Ledger', href: '/ledger' },
+  { name: 'Complaint', href: '/complaint' },
 ];
 
 export default function Navbar() {
