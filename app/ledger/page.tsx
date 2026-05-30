@@ -104,6 +104,11 @@ export default function LedgerPage() {
   useEffect(() => {
     if (selectedCategory !== "SH") {
       setSelectedState("all");
+    } else {
+      // When switching TO SH, reset year if it's before 2024 (SH only shows 2024-2026)
+      if (selectedYear !== "all" && Number(selectedYear) < 2024) {
+        setSelectedYear("all");
+      }
     }
   }, [selectedCategory]);
 
@@ -132,7 +137,7 @@ export default function LedgerPage() {
               Procurement & <span className="text-cyan-400">Highway Spending</span>
             </h1>
             <p className="text-slate-400 text-lg leading-relaxed max-w-2xl mx-auto">
-              Open spending ledger and tender accountability tracker mapping National Highway (NH) and State Highway (SH) contracts across India for 2021–2026.
+              Open spending ledger and tender accountability tracker mapping National Highway (NH) and State Highway (SH) contracts across India.
             </p>
           </section>
 
@@ -205,9 +210,13 @@ export default function LedgerPage() {
                   <option value="2026">Year 2026</option>
                   <option value="2025">Year 2025</option>
                   <option value="2024">Year 2024</option>
-                  <option value="2023">Year 2023</option>
-                  <option value="2022">Year 2022</option>
-                  <option value="2021">Year 2021</option>
+                  {selectedCategory !== "SH" && (
+                    <>
+                      <option value="2023">Year 2023</option>
+                      <option value="2022">Year 2022</option>
+                      <option value="2021">Year 2021</option>
+                    </>
+                  )}
                 </select>
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-500 text-xs">
                   ▼
