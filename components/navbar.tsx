@@ -10,7 +10,7 @@ const navigation = [
   { name: 'Map', href: '/#map' },
   { name: 'API Docs', href: '/api' },
   { name: 'Tech Stack', href: '/tech' },
-  { name: 'Impact', href: '/impact' },
+  { name: 'Ledger', href: '/ledger' },
 ];
 
 export default function Navbar() {

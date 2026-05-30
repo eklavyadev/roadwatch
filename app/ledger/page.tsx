@@ -30,7 +30,7 @@ const STATES_LIST = [
   'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
 ].sort();
 
-export default function ImpactPage() {
+export default function LedgerPage() {
   const [contracts, setContracts] = useState<ContractRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -46,7 +46,7 @@ export default function ImpactPage() {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(1500);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(500);
 
   // Statistics/aggregates derived from loaded state
   const [aggregates, setAggregates] = useState({
@@ -388,7 +388,6 @@ export default function ImpactPage() {
                         <option value={50}>50</option>
                         <option value={100}>100</option>
                         <option value={500}>500</option>
-                        <option value={1500}>1500</option>
                       </select>
                       <span>per page</span>
                     </div>
