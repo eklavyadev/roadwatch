@@ -165,6 +165,9 @@ export default function ReportPotholePage() {
         formData.append('lng', String(draft.lng));
         formData.append('type', draft.type);
         formData.append('impact_level', String(draft.impact_level));
+        if (draft.road_category) {
+          formData.append('road_category', draft.road_category);
+        }
 
         const res = await fetch('/api/report/create', {
           method: 'POST',
@@ -257,6 +260,25 @@ export default function ReportPotholePage() {
       ? `(${landmark.trim()}) ${autoLocation}`
       : autoLocation;
 
+    let roadCategory = 'PWD';
+    if (navigator.onLine) {
+      try {
+        const classRes = await fetch('/api/classify-road', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat, lng }),
+        });
+        if (classRes.ok) {
+          const classData = await classRes.json();
+          if (classData.category) {
+            roadCategory = classData.category;
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to classify road:', err);
+      }
+    }
+
     // Check if offline, bypass server and cache locally
     if (!navigator.onLine) {
       try {
@@ -270,6 +292,7 @@ export default function ReportPotholePage() {
           lng,
           type: issueType,
           impact_level: impactLevel,
+          road_category: roadCategory,
         };
 
         const cached = localStorage.getItem('roadwatch_offline_reports');
@@ -307,6 +330,7 @@ export default function ReportPotholePage() {
       formData.append('lng', String(lng));
       formData.append('type', issueType);
       formData.append('impact_level', String(impactLevel));
+      formData.append('road_category', roadCategory);
 
       const res = await fetch('/api/report/create', {
         method: 'POST',
@@ -344,6 +368,7 @@ export default function ReportPotholePage() {
           lng,
           type: issueType,
           impact_level: impactLevel,
+          road_category: roadCategory,
         };
 
         const cached = localStorage.getItem('roadwatch_offline_reports');

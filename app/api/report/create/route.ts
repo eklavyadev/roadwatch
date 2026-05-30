@@ -30,6 +30,7 @@ export async function POST(req: Request) {
 
     const type = formData.get('type') as string | null;
     const impactLevel = Number(formData.get('impact_level'));
+    const roadCategory = (formData.get('road_category') as string) || 'Municipal';
 
     /* ---------- BASIC VALIDATION ---------- */
     if (
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
 
     /* ---------- FALLBACK OR EXECUTION ---------- */
     if (!isSupabaseConfigured || !supabase) {
-      return await handleLocalCreate(image, location, lat, lng, type, impactLevel);
+      return await handleLocalCreate(image, location, lat, lng, type, impactLevel, roadCategory);
     }
 
     try {
@@ -78,7 +79,7 @@ export async function POST(req: Request) {
 
       if (duplicateError) {
         console.error('DUPLICATE CHECK ERROR, FALLING BACK TO LOCAL DB:', duplicateError);
-        return await handleLocalCreate(image, location, lat, lng, type, impactLevel);
+        return await handleLocalCreate(image, location, lat, lng, type, impactLevel, roadCategory);
       }
 
       if (nearbyReports && nearbyReports.length > 0) {
@@ -102,7 +103,7 @@ export async function POST(req: Request) {
 
       if (uploadError) {
         console.error('UPLOAD ERROR, FALLING BACK TO LOCAL DB:', uploadError);
-        return await handleLocalCreate(image, location, lat, lng, type, impactLevel);
+        return await handleLocalCreate(image, location, lat, lng, type, impactLevel, roadCategory);
       }
 
       const { data: publicUrlData } = supabase.storage
@@ -120,14 +121,14 @@ export async function POST(req: Request) {
           type,                // ✅ NEW
           impact_level: impactLevel, // ✅ NEW
           status: 'pending',
-          governing_body: 'Municipal',
+          governing_body: roadCategory,
         })
         .select()
         .single();
 
       if (insertError || !inserted) {
         console.error('DB ERROR, FALLING BACK TO LOCAL DB:', insertError);
-        return await handleLocalCreate(image, location, lat, lng, type, impactLevel);
+        return await handleLocalCreate(image, location, lat, lng, type, impactLevel, roadCategory);
       }
 
       /* ---------- 🔥 AI TRIGGER (NON-BLOCKING) ---------- */
@@ -148,7 +149,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true });
     } catch (supabaseErr: any) {
       console.error('SUPABASE CREATE EXCEPTION, FALLING BACK TO LOCAL DB:', supabaseErr);
-      return await handleLocalCreate(image, location, lat, lng, type, impactLevel);
+      return await handleLocalCreate(image, location, lat, lng, type, impactLevel, roadCategory);
     }
   } catch (err) {
     console.error('SERVER ERROR:', err);
@@ -165,7 +166,8 @@ async function handleLocalCreate(
   lat: number,
   lng: number,
   type: string,
-  impactLevel: number
+  impactLevel: number,
+  roadCategory: string
 ) {
   try {
     // 1. Simple local duplicate check (50 meters ~ 0.00045 deg)
@@ -198,7 +200,7 @@ async function handleLocalCreate(
       lng,
       type: type as any,
       impact_level: impactLevel,
-      governing_body: 'Municipal',
+      governing_body: roadCategory,
     });
 
     // 4. Trigger AI Service if configured
