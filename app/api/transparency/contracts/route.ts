@@ -23,6 +23,7 @@ const RAW_RAJASTHAN_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_2
 const RAW_TN_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_Tamil.Nadu.json");
 const RAW_UTTARAKHAND_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_Uttarakhand.json");
 const RAW_WB_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_West_Bengal.json");
+const RAW_UP_TENDERS_FILE = path.join(process.cwd(), "cppp_tenders_full_26_Uttar_Pradesh.json");
 const RAW_NHAI_TENDERS_FILE = path.join(process.cwd(), "..", "nhai_tenders.json");
 
 export interface ContractRecord {
@@ -1156,6 +1157,47 @@ function parseAndStoreRealTenders(force = false): ContractRecord[] {
         });
       }
     } catch (e) { console.error("Error reading/parsing RAW_WB_TENDERS_FILE:", e); }
+  }
+
+  // 1.24. Process cppp_tenders_full_26_Uttar_Pradesh.json
+  if (fs.existsSync(RAW_UP_TENDERS_FILE)) {
+    try {
+      const rawData = fs.readFileSync(RAW_UP_TENDERS_FILE, "utf8");
+      const parsedData = JSON.parse(rawData);
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach((item: any, index: number) => {
+          const s = item.structured_data || {};
+          const orgName = cleanText(s['Organisation Name'] || '');
+          const refNo = cleanText(s['Tender Ref. No.'] || '');
+          const description = cleanText(s['Tender Description'] || '');
+          const document = cleanText(s['Tender Document'] || '');
+          const type = cleanText(s['Tender Type'] || 'Works');
+          const bids = parseInt((s['Number of bids received'] || '').replace(/\D/g, ''), 10) || 0;
+          const bidder = cleanText(s['Name of the selected bidder(s)'] || '');
+          const valStr = (s['Contract Value'] || s['Contract Value *'] || '').replace(/[^0-9.]/g, '');
+          const value = parseFloat(valStr) || 0;
+          const published = cleanText(s['Award Published Date'] || s['Published Date'] || '');
+          const contractDate = cleanText(s['Contract Date'] || '');
+          const address = cleanText(s['Address of the selected bidder(s)'] || '');
+          const completion = cleanText(s['Date of Completion/Completion Period in Days'] || '');
+          let year = 2026;
+          const yearMatch = `${contractDate} ${published} ${refNo}`.match(/\b(2021|2022|2023|2024|2025|2026)\b/);
+          if (yearMatch) year = parseInt(yearMatch[1], 10);
+          
+          const category: "NH" | "SH" = 'SH';
+          const uniqueKey = `${refNo}_${bidder}_${value}`.toLowerCase().replace(/\s+/g, '');
+          if (!seenKeys.has(uniqueKey)) {
+            seenKeys.add(uniqueKey);
+            contracts.push({
+              id: `up_${index + 1}`, organisationName: orgName, tenderRefNo: refNo, tenderDescription: description,
+              tenderDocument: document, tenderType: type, bidsReceived: bids, selectedBidder: bidder, contractValue: value,
+              publishedDate: published, contractDate: contractDate, category: category, year: year,
+              selectedBidderAddress: address, completionPeriod: completion, state: 'Uttar Pradesh'
+            });
+          }
+        });
+      }
+    } catch (e) { console.error("Error reading/parsing RAW_UP_TENDERS_FILE:", e); }
   }
 
   // 2. Process nhai_tenders.json
