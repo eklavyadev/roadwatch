@@ -16,7 +16,7 @@ function createCustomIcon(colour: string) {
     <circle cx="14" cy="14" r="11" fill="${colour}" stroke="white" stroke-width="2"/>
     <text x="14" y="18" text-anchor="middle" fill="white" font-size="11" font-family="sans-serif">🕳</text>
   </svg>`;
-  const iconUrl = \`data:image/svg+xml;charset=UTF-8,\${encodeURIComponent(svg)}\`;
+  const iconUrl = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
   return L.icon({
     iconUrl,
     iconSize: [28, 28],
