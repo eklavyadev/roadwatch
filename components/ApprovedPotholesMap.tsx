@@ -1,14 +1,12 @@
 'use client';
+import dynamic from 'next/dynamic';
 import React from 'react';
 
-type Report = {
-  id: string;
-  lat: number;
-  lng: number;
-  location: string;
-  type: 'pothole' | 'streetlight' | 'traffic_signal' | 'open_drainage';
-  impact_level: number;
-};
+// Next.js dynamic import to disable SSR for react-leaflet
+const MapInner = dynamic(() => import('./MapInner'), {
+  ssr: false,
+  loading: () => <div className="h-[500px] w-full bg-[#0f172a] rounded animate-pulse border border-slate-700"></div>,
+});
 
 type ApprovedPotholesMapProps = {
   focusReport?: any;
@@ -16,10 +14,5 @@ type ApprovedPotholesMapProps = {
 };
 
 export default function ApprovedPotholesMap({ focusReport, single }: ApprovedPotholesMapProps) {
-  // Placeholder component because Google Maps API requires billing.
-  return (
-    <div className="bg-[#0f172a] text-slate-300 p-6 rounded border border-slate-700 text-center">
-      <p>Map view is disabled (Google Maps API not configured).</p>
-    </div>
-  );
+  return <MapInner focusReport={focusReport} single={single} />;
 }
