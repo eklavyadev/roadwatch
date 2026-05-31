@@ -3,6 +3,26 @@ import path from 'path';
 import { getLocalReports, LocalReport } from './localDb';
 
 const CONTRACTS_FILE = path.join(process.cwd(), 'contracts_store.json');
+const FAQ_FILE = path.join(process.cwd(), 'faq_data.json');
+
+// ── FAQ knowledge base for local engine ───────────────────────────────
+interface FaqEntry {
+  id: string;
+  question: string;
+  keywords: string[];
+  answer: string;
+  stats?: Record<string, string>;
+  table?: { columns: string[]; rows: string[][] };
+}
+
+let faqData: FaqEntry[] = [];
+try {
+  if (fs.existsSync(FAQ_FILE)) {
+    faqData = JSON.parse(fs.readFileSync(FAQ_FILE, 'utf8'));
+  }
+} catch (e) {
+  console.error('localChatEngine: Failed to load faq_data.json:', e);
+}
 
 export interface ContractRecord {
   id: string;
@@ -308,6 +328,45 @@ Here is the current database status of community-reported road quality issues:
     return response;
   }
 
+  // 9. FAQ KNOWLEDGE BASE MATCH
+  {
+    let bestFaq: FaqEntry | null = null;
+    let bestScore = 0;
+    for (const faq of faqData) {
+      let score = 0;
+      const faqQ = faq.question.toLowerCase();
+      const qWords = query.split(/\s+/);
+      for (const w of qWords) {
+        if (w.length > 2 && faqQ.includes(w)) score += 1;
+      }
+      for (const kw of faq.keywords) {
+        if (query.includes(kw.toLowerCase())) score += 3;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestFaq = faq;
+      }
+    }
+
+    if (bestFaq && bestScore >= 3) {
+      let response = `📋 **${bestFaq.question}**\n\n${bestFaq.answer}\n\n`;
+      if (bestFaq.stats) {
+        for (const [k, v] of Object.entries(bestFaq.stats)) {
+          response += `- **${k}**: **${v}**\n`;
+        }
+        response += '\n';
+      }
+      if (bestFaq.table) {
+        response += `| ${bestFaq.table.columns.join(' | ')} |\n`;
+        response += `| ${bestFaq.table.columns.map(() => ':---').join(' | ')} |\n`;
+        for (const row of bestFaq.table.rows) {
+          response += `| ${row.join(' | ')} |\n`;
+        }
+      }
+      return response;
+    }
+  }
+
   // FALLBACK GENERIC MATCH
   return `🤖 **RoadWatch AI Civil Assistant**
 
@@ -320,5 +379,8 @@ Alternatively, try asking one of these:
 - *"Show me total spending statistics"*
 - *"What are the road quality reports?"*
 - *"Show me spending in Tripura"*
-- *"Report a pothole"*`;
+- *"Report a pothole"*
+- *"What is the overall highway infrastructure investment overview?"*
+- *"Who are the top 10 highway contractors nationwide?"*
+- *"What is the breakdown of highway investments by year?"*`;
 }
