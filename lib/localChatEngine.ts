@@ -135,7 +135,14 @@ Feel free to type any question below!`;
   }
 
   // 4. STATS & SUMMARY
-  if (query.includes('stats') || query.includes('spending') || query.includes('summary') || query.includes('total spend') || query.includes('contracts') || query === 'statistics') {
+  if (
+    query === 'stats' || 
+    query === 'statistics' || 
+    query.includes('total spending') || 
+    query.includes('spending stat') || 
+    query === 'summary' ||
+    query.includes('overall summary')
+  ) {
     let totalValue = 0;
     let bids = 0;
     const bidders = new Set<string>();
@@ -267,7 +274,7 @@ We have tracked public infrastructure projects awarded to **${matchedContractor.
   }
 
   // 7. HIGHWAY / CODE SEARCH
-  const nhMatch = query.match(/(nh[- ]?\d+|sh[- ]?\d+|gst road|budhel|vartej|outer ring)/i);
+  const nhMatch = query.match(/(nh[- ]?\d+[a-z]*|sh[- ]?\d+[a-z]*|gst road|budhel|vartej|outer ring)/i);
   if (nhMatch) {
     const searchCode = nhMatch[0].toLowerCase().replace(/[- ]/g, '');
     const roadContracts = contracts.filter(c => {

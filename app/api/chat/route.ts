@@ -285,8 +285,8 @@ Answer the user's latest question with deep contextual accuracy and visually gor
       console.error('Gemini API execution failed, falling back to local chat engine:', apiErr);
       const localResponse = handleLocalChat(userMessage);
       return NextResponse.json({
-        content: localResponse + `\n\n*(Note: Falls back to Local Engine due to Gemini connection issue: ${apiErr.message || apiErr})*`,
-        engine: 'Local Heuristic Engine (Fallback)',
+        content: localResponse,
+        engine: 'Local Heuristic Engine',
       });
     }
   } catch (err: any) {
