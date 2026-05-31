@@ -5,7 +5,7 @@
         "department_name": "Roads & Buildings Department",
         "office_email": "eincrbap@gmail.com",
         "administrative_head_email": "prlsecy-trb@ap.gov.in",
-        "official_website": "https://aproads.ap.gov.in"
+        "official_website": "https://aprdc.ap.gov.in"   
     },
     {
         "state_ut": "Arunachal Pradesh",
@@ -29,7 +29,7 @@
         "department_name": "Road Construction Department (RCD)",
         "office_email": "rcdbihar@nic.in",
         "administrative_head_email": "secy-rcd-bih@nic.in",
-        "official_website": "https://rcd.bihar.gov.in"
+        "official_website": "https://bsrdcl.bihar.gov.in/"   
     },
     {
         "state_ut": "Chhattisgarh",
@@ -117,7 +117,7 @@
         "department_name": "Public Works Department",
         "office_email": "secy-works-mn@gov.in",
         "administrative_head_email": "ce.pwd.manipur@gmail.com",
-        "official_website": "http://pwdmanipur.nic.in"
+        "official_website": "https://manipurtransport.gov.in/"   
     },
     {
         "state_ut": "Meghalaya",
@@ -157,7 +157,7 @@
         "department_name": "Public Works Department (B&R)",
         "office_email": "ce.hq.pwd@punjab.gov.in",
         "administrative_head_email": "secy.pw@punjab.gov.in",
-        "official_website": "https://pwdpunjab.gov.in"
+        "official_website": "https://prbdb.punjab.gov.in/"  
     },
     {
         "state_ut": "Rajasthan",
@@ -205,7 +205,7 @@
         "department_name": "Public Works Department",
         "office_email": "ministeruppwd@gmail.com",
         "administrative_head_email": "secpwd-up@nic.in",
-        "official_website": "https://uppwd.gov.in"
+        "official_website": "https://upsha.in/"    
     },
     {
         "state_ut": "Uttarakhand",
@@ -221,7 +221,7 @@
         "department_name": "Public Works Department",
         "office_email": "cehq.pwd-wb@gov.in",
         "administrative_head_email": "micpwdwb@gmail.com",
-        "official_website": "https://pwd.wbgov.in"
+        "official_website": "https://pwd.wb.gov.in/"   
     },
     {
         "state_ut": "Delhi",
