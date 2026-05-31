@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import imageCompression from 'browser-image-compression';
+import Link from 'next/link';
 
 async function compressImage(file: File) {
   return await imageCompression(file, {
@@ -398,7 +399,8 @@ export default function ReportPotholePage() {
   return (
     <div className="min-h-screen bg-[#020817] text-white px-6 py-20">
       <div className="mx-auto max-w-xl bg-[#0f172a] p-6 rounded border border-slate-700">
-        <h1 className="text-2xl font-bold mb-6">Report a Pothole</h1>
+        <h1 className="text-2xl font-bold mb-6">Report a Road‑Related Issue</h1>
+        <p className="mt-2 text-sm text-gray-300">If you need to file a complaint with the appropriate authority, please visit the <Link href="/complaint" className="text-blue-400 underline">Complaint Page</Link>.</p>
 
         {success && error === 'OFFLINE_SAVED' && (
           <div className="mb-4 rounded bg-amber-600/20 border border-amber-600 p-3 text-sm text-amber-400">

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import Image from 'next/image';
 import Link from 'next/link';
+import authorities from '../../../all_india_pwd_road_authorities.json';
 
 const IMPACT_LABEL: Record<number, string> = {
   1: 'Low',
@@ -48,6 +49,9 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
     );
   }
 
+  // Determine authority email based on state
+  const authorityInfo = authorities.find((a: any) => a.state_ut === report.state_ut);
+  const authorityEmail = authorityInfo?.office_email || authorityInfo?.administrative_head_email || '';
 
   const complaintSubject = encodeURIComponent(`[RoadWatch] Road Issue Reported at ${report.location}`);
   const complaintBody = encodeURIComponent(
@@ -63,7 +67,7 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
     `Concerned Citizen (Via RoadWatch)`
   );
   const governingBody = report.governing_body || 'PWD';
-  const mailtoUrl = `mailto:?subject=${complaintSubject}&body=${complaintBody}`;
+  const mailtoUrl = `mailto:${authorityEmail}?subject=${complaintSubject}&body=${complaintBody}`;
 
   return (
     <div className="min-h-screen bg-[#020817] text-white px-6 py-10">
@@ -110,21 +114,10 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
             </dd>
           </div>
         </dl>
-        <div className="mt-8 flex flex-col sm:flex-row gap-4">
-          <a
-            href={mailtoUrl}
-            className="flex-1 rounded bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-500 transition shadow-lg text-center flex items-center justify-center gap-2"
-          >
-            ✉️ Email {governingBody} Authority
-          </a>
-          <a
-            href="#"
-            className="flex-1 rounded bg-cyan-500 px-4 py-3 text-sm font-bold text-[#020817] hover:bg-cyan-400 transition shadow-lg text-center flex items-center justify-center gap-2"
-            title="Portal links will be mapped from mail.json soon"
-          >
-            🏛️ File Official Portal Complaint
-          </a>
-        </div>
+        <p className="mt-4 text-sm text-gray-300">
+          To file a complaint with the appropriate authority, please go to the{' '}
+          <Link href="/complaint" className="text-blue-400 underline">Complaint Page</Link>.
+        </p>
       </div>
     </div>
   );
