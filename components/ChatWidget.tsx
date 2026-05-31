@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 type Message = {
   id: string;
@@ -19,6 +19,25 @@ type ReportingState = {
   lng?: number;
   accuracy?: number;
   autoAddress?: string;
+};
+
+type HighwayEntry = {
+  code: string;
+  contracts: number;
+  totalValue: string;
+  states: string[];
+};
+
+type StateEntry = {
+  state: string;
+  contracts: number;
+  totalValue: string;
+};
+
+type HighwayIndex = {
+  highways: { nh: HighwayEntry[]; sh: HighwayEntry[] };
+  states: StateEntry[];
+  totalContracts: number;
 };
 
 const SUGGESTIONS = [
@@ -45,9 +64,44 @@ export default function ChatWidget() {
   // Reporting Flow State
   const [reporting, setReporting] = useState<ReportingState>({ step: 'idle' });
 
+  // Highway Dropdown State
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownTab, setDropdownTab] = useState<'nh' | 'sh' | 'states'>('nh');
+  const [dropdownSearch, setDropdownSearch] = useState('');
+  const [highwayIndex, setHighwayIndex] = useState<HighwayIndex | null>(null);
+  const [loadingIndex, setLoadingIndex] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch highway index on first dropdown open
+  const fetchHighwayIndex = useCallback(async () => {
+    if (highwayIndex || loadingIndex) return;
+    setLoadingIndex(true);
+    try {
+      const res = await fetch('/api/highways');
+      if (res.ok) {
+        const data = await res.json();
+        setHighwayIndex(data);
+      }
+    } catch (e) {
+      console.error('Failed to load highway index:', e);
+    } finally {
+      setLoadingIndex(false);
+    }
+  }, [highwayIndex, loadingIndex]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    if (showDropdown) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showDropdown]);
 
 
   // Auto-scroll chat
@@ -610,7 +664,7 @@ export default function ChatWidget() {
 
           {/* CHAT INPUT AREA */}
           {reporting.step === 'idle' && (
-            <div className="p-3 bg-[#0a1122] border-t border-slate-800 space-y-2">
+            <div className="p-3 bg-[#0a1122] border-t border-slate-800 space-y-2 relative">
               {/* SUGGESTION CHIPS */}
               {messages.length === 1 && (
                 <div className="flex space-x-2 overflow-x-auto pb-1 no-scrollbar scroll-smooth">
@@ -626,6 +680,110 @@ export default function ChatWidget() {
                 </div>
               )}
 
+              {/* HIGHWAY DROPDOWN PANEL */}
+              {showDropdown && (
+                <div
+                  ref={dropdownRef}
+                  className="absolute bottom-full left-0 right-0 mx-3 mb-2 bg-[#0b1329] border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden z-50"
+                  style={{ maxHeight: '320px', boxShadow: '0 -8px 30px rgba(0,0,0,0.5)' }}
+                >
+                  {/* Dropdown Header */}
+                  <div className="flex items-center justify-between px-3 py-2 bg-[#0f1d3a] border-b border-slate-700/50">
+                    <span className="text-[10px] font-bold text-cyan-400 tracking-wider uppercase">🛣️ Quick Highway Explorer</span>
+                    <button
+                      onClick={() => setShowDropdown(false)}
+                      className="text-slate-400 hover:text-white text-xs cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Tabs */}
+                  <div className="flex border-b border-slate-800">
+                    {([['nh', '🏛️ NH'], ['sh', '🏘️ SH'], ['states', '📍 States']] as const).map(([key, label]) => (
+                      <button
+                        key={key}
+                        onClick={() => { setDropdownTab(key); setDropdownSearch(''); }}
+                        className={`flex-1 text-[10px] py-2 font-bold tracking-wide transition cursor-pointer ${
+                          dropdownTab === key
+                            ? 'text-cyan-400 border-b-2 border-cyan-400 bg-cyan-500/5'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Search */}
+                  <div className="px-3 py-2 border-b border-slate-800">
+                    <input
+                      type="text"
+                      placeholder={dropdownTab === 'states' ? 'Search states...' : 'Search highways (e.g. 44)...'}
+                      value={dropdownSearch}
+                      onChange={(e) => setDropdownSearch(e.target.value)}
+                      className="w-full text-[11px] rounded-lg bg-slate-900 border border-slate-700 p-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Items List */}
+                  <div className="overflow-y-auto" style={{ maxHeight: '200px' }}>
+                    {loadingIndex ? (
+                      <div className="flex items-center justify-center py-8">
+                        <span className="h-5 w-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                        <span className="ml-2 text-[10px] text-slate-400">Loading data...</span>
+                      </div>
+                    ) : !highwayIndex ? (
+                      <div className="text-center py-6 text-[10px] text-slate-500">No data available</div>
+                    ) : dropdownTab === 'states' ? (
+                      /* State List */
+                      highwayIndex.states
+                        .filter((s) => s.state.toLowerCase().includes(dropdownSearch.toLowerCase()))
+                        .map((s) => (
+                          <button
+                            key={s.state}
+                            onClick={() => {
+                              handleSendMessage(`Show me highway spending details for ${s.state}`);
+                              setShowDropdown(false);
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-cyan-500/10 border-b border-slate-800/50 transition cursor-pointer group"
+                          >
+                            <div>
+                              <span className="text-[11px] font-semibold text-slate-200 group-hover:text-cyan-400 transition">{s.state}</span>
+                              <span className="text-[9px] text-slate-500 ml-2">{s.contracts} contracts</span>
+                            </div>
+                            <span className="text-[10px] font-mono text-emerald-400">{s.totalValue}</span>
+                          </button>
+                        ))
+                    ) : (
+                      /* NH / SH List */
+                      (dropdownTab === 'nh' ? highwayIndex.highways.nh : highwayIndex.highways.sh)
+                        .filter((h) => h.code.toLowerCase().includes(dropdownSearch.toLowerCase()))
+                        .slice(0, 50)
+                        .map((h) => (
+                          <button
+                            key={h.code}
+                            onClick={() => {
+                              handleSendMessage(`Search contracts for ${h.code}`);
+                              setShowDropdown(false);
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-cyan-500/10 border-b border-slate-800/50 transition cursor-pointer group"
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-[11px] font-bold text-slate-200 group-hover:text-cyan-400 transition">{h.code}</span>
+                              <span className="text-[9px] text-slate-500">
+                                {h.contracts} contract{h.contracts > 1 ? 's' : ''} • {h.states.slice(0, 3).join(', ')}{h.states.length > 3 ? '...' : ''}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-mono text-emerald-400">{h.totalValue}</span>
+                          </button>
+                        ))
+                    )}
+                  </div>
+                </div>
+              )}
+
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -633,6 +791,25 @@ export default function ChatWidget() {
                 }}
                 className="flex items-center space-x-2"
               >
+                {/* Highway Dropdown Toggle */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDropdown((v) => !v);
+                    if (!highwayIndex) fetchHighwayIndex();
+                  }}
+                  className={`flex items-center justify-center h-9 w-9 rounded-xl border transition cursor-pointer ${
+                    showDropdown
+                      ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400'
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-cyan-500/50 hover:text-cyan-400'
+                  }`}
+                  title="Browse Highways & States"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+                  </svg>
+                </button>
+
                 <input
                   type="text"
                   placeholder="Ask about tenders, budget, road quality..."
