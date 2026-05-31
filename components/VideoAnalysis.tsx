@@ -1,7 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 
+const VideoMap = dynamic(() => import('./VideoMapInner'), {
+  ssr: false,
+  loading: () => <div className="h-[300px] w-full bg-[#0f172a] rounded animate-pulse border border-slate-700"></div>,
+});
 const MODEL_API =
   process.env.NEXT_PUBLIC_AI_SERVER_URL ?? '';
 
@@ -39,16 +44,6 @@ function confBadge(c: number) {
   return 'bg-cyan-600 text-white';
 }
 
-function markerIcon(colour: string) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
-    <circle cx="14" cy="14" r="11" fill="${colour}" stroke="white" stroke-width="2"/>
-    <text x="14" y="18" text-anchor="middle" fill="white" font-size="11" font-family="sans-serif">🕳</text>
-  </svg>`;
-  return {
-    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new window.google.maps.Size(28, 28),
-  };
-}
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -131,10 +126,8 @@ function DetailPanel({ analysis }: { analysis: Analysis }) {
         ))}
       </div>
 
-      {/* Map (disabled) */}
-      <div className="h-64 md:h-auto min-h-[300px] flex items-center justify-center text-gray-400 border border-slate-700 rounded-lg bg-[#0f172a]">
-        Map view unavailable (Google Maps billing not configured)
-      </div>
+      {/* Map */}
+      <VideoMap potholes={visible} />
 
       {/* Legend + show more toggle */}
       {allPotholes.length > 0 && (
