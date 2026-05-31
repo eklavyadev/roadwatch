@@ -37,8 +37,18 @@ export default function Hero() {
               <span className="animate-bounce">↓</span>
             </a>
           </div>
+          {/* DOWNLOAD BUTTON */}
+                  <div className="flex justify-center pb-16 mt-5">
+                    <a
+                      href="/downloads/civicforge_roadwatch.exe"
+                      download
+                      className="rounded-lg border border-cyan-500 bg-cyan-500/10 px-6 py-3 text-cyan-400 font-medium transition hover:bg-cyan-500/20"
+                    >
+                      Download RoadWatch Desktop (Offline Functionality)
+                    </a>
+                  </div>
         </div>
-
+        
         {/* Scroll Indicator */}
         <a
           href="#how"

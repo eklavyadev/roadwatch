@@ -12,8 +12,11 @@ export default function HomePage() {
       <div className="relative min-h-screen bg-[#020817] text-white">
         <Navbar />
         <Hero />
+
       </div>
 
+
+      
       {/* HOW IT WORKS */}
       <HowItWorks />
 
