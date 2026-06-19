@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { updateTaskCache } from '@/lib/taskStateCache';
 
 export const runtime = 'nodejs';
-export const maxDuration = 3600; // 60 minutes for very large video uploads
+export const maxDuration = 300; // 60 minutes for very large video uploads
 
 export async function POST(req: Request) {
   try {
