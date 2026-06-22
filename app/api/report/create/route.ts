@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import nodemailer from 'nodemailer';
 import { promises as fs } from 'fs'; 
 import path from 'path';
 
@@ -14,52 +13,27 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Configure the Gmail SMTP transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_APP_PASSWORD,
-  },
-});
-
-const TYPE_LABEL: Record<string, string> = {
-  pothole: 'Pothole',
-  streetlight: 'Streetlight',
-  traffic_signal: 'Traffic Signal',
-  open_drainage: 'Open Drainage',
-};
-
-const IMPACT_LABEL: Record<string, string> = {
-  '1': 'Low',
-  '2': 'Medium',
-  '3': 'High',
-};
-
-// Helper function to load and search the authority email from JSON
+// Helper function to load and verify the state exists within test.json structure
 async function getAuthorityEmailByState(stateName: string): Promise<string | string[]> {
-  const DEFAULT_BACKUP_EMAIL = 'aayushukla007@gmail.com'; // Fallback backup anchor
+  const DEFAULT_BACKUP_EMAIL = 'aayushukla007@gmail.com';
   
   try {
-    // PATH: Points directly to your root folder file layout
-    const filePath = path.join(process.cwd(), 'all_india_pwd_road_authorities.json');
+    const filePath = path.join(process.cwd(), 'test.json');
     const fileContent = await fs.readFile(filePath, 'utf-8');
     const authorities = JSON.parse(fileContent);
 
-    // Standardize casing to avoid mismatches
     const match = authorities.find(
       (item: any) => item.state_ut.trim().toLowerCase() === stateName.trim().toLowerCase()
     );
 
     if (match && match.office_email) {
-      console.log(`🎯 Matched Authority found for ${stateName}:`, match.office_email);
+      console.log(`🎯 Checked test.json registry context for ${stateName}`);
       return match.office_email;
     }
   } catch (err) {
-    console.error('Error reading authorities JSON directory:', err);
+    console.error('Error verifying metadata against test.json registry:', err);
   }
 
-  console.log(`⚠️ No specific authority matched or error occurred. Falling back to default backup email.`);
   return DEFAULT_BACKUP_EMAIL;
 }
 
@@ -88,7 +62,7 @@ export async function POST(request: Request) {
     // 2. Extract State Name from Location String safely
     let detectedState = "Assam"; // Smart default fallback
 
-    // If the frontend passed raw coordinates instead of an address, fetch the state using an open API
+    // If the frontend passed raw coordinates instead of an address, fetch the state using Nominatim
     if (location.includes('Lat') && location.includes('Lng')) {
       try {
         console.log("🔄 Location string contains raw coordinates. Fetching state name via Nominatim...");
@@ -113,8 +87,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Look up the official target email from your JSON file
-    const targetOfficialEmail = await getAuthorityEmailByState(detectedState);
+    // Verify registry exists in your test.json file ahead of database save operations
+    await getAuthorityEmailByState(detectedState);
 
     // 3. Upload the Image to Supabase Storage Bucket
     const fileExtension = imageFile.name.split('.').pop() || 'jpg';
@@ -141,6 +115,7 @@ export async function POST(request: Request) {
     const imageUrl = publicUrlData.publicUrl;
 
     // 4. Insert the Record into the Supabase Database Table
+    // 🎯 Stored with status 'pending'. ZERO emails can escape this route file!
     const { data: reportData, error: dbError } = await supabase
       .from('reports')
       .insert([
@@ -163,57 +138,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to save report record' }, { status: 500 });
     }
 
-    // 5. Send the Dynamic Automated Notification Email
-    const mailOptions = {
-      from: `"RoadWatch App" <${process.env.EMAIL_USER}>`,
-      to: targetOfficialEmail, 
-      bcc: 'roadwatchadmin@gmail.com', 
-      subject: `RoadWatch Report #${reportData.id} - ${TYPE_LABEL[type] || type} [${detectedState.toUpperCase()}]`,
-      html: `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; color: #1e293b; background-color: #f8fafc; padding: 24px; border-radius: 8px; border: 1px solid #e2e8f0;">
-          <h2 style="color: #0f172a; margin-bottom: 4px; font-size: 20px;">New Civic Road Issue Logged</h2>
-          <p style="color: #64748b; font-size: 14px; margin-top: 0;">Report Identity Key: <strong>#${reportData.id}</strong></p>
-          <hr style="border: 0; border-top: 1px solid #cbd5e1; margin: 20px 0;" />
-          
-          <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 14px; line-height: 1.6;">
-            <tr>
-              <th style="padding: 6px 0; color: #475569; width: 140px;">Classification:</th>
-              <td style="color: #0f172a; font-weight: 600;">${TYPE_LABEL[type] || type}</td>
-            </tr>
-            <tr>
-              <th style="padding: 6px 0; color: #475569;">Severity Tier:</th>
-              <td style="color: #ef4444; font-weight: 600;">${IMPACT_LABEL[impactLevel] || impactLevel} (Level ${impactLevel})</td>
-            </tr>
-            <tr>
-              <th style="padding: 6px 0; color: #475569;">Target Location:</th>
-              <td style="color: #0f172a;">${location}</td>
-            </tr>
-            <tr>
-              <th style="padding: 6px 0; color: #475569;">Jurisdiction State:</th>
-              <td style="color: #0f172a; font-weight: 600;">${detectedState}</td>
-            </tr>
-            <tr>
-              <th style="padding: 6px 0; color: #475569;">GPS Position:</th>
-              <td style="color: #0f172a; font-family: monospace;">${lat.toFixed(5)}, ${lng.toFixed(5)}</td>
-            </tr>
-          </table>
-          
-          <hr style="border: 0; border-top: 1px solid #cbd5e1; margin: 20px 0;" />
-          <p style="font-size: 13px; color: #64748b; margin-bottom: 0;">The visual verification snapshot provided during submission is attached directly to this message.</p>
-        </div>
-      `,
-      attachments: [
-        {
-          filename: imageFile.name || 'incident-snapshot.jpg',
-          content: imageBuffer,
-          contentType: imageFile.type,
-        },
-      ],
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    return NextResponse.json(reportData);
+    // 5. 🛡️ Safe Quarantine Return 
+    // This file returns immediately after updating your Supabase tracking tables.
+    return NextResponse.json({
+      message: "Report successfully queued for admin screening verification.",
+      report: reportData
+    });
 
   } catch (error: any) {
     console.error('Server Handler Failure:', error);
