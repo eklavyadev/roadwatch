@@ -95,14 +95,24 @@ export default function AdminPage() {
     setReports(Array.isArray(data) ? data : []);
   };
 
-  const updateStatus = async (
+const updateStatus = async (
     id: string,
     status: 'pending' | 'approved' | 'rejected'
   ) => {
-    await fetch('/api/admin/update', {
-      method: 'POST',
-      body: JSON.stringify({ id, status }),
-    });
+    if (status === 'approved') {
+      await fetch('/api/report/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId: id }), // Matches the exact name your approve route expects
+      });
+    } else {
+      await fetch('/api/admin/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status }),
+      });
+    }
+    
     fetchReports();
     showToast(`Status updated to ${status}`);
   };
