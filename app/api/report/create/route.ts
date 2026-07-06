@@ -10,6 +10,68 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// 🔍 Completely Overpass-Powered Classifier (Strict Validation - No Hardcoded Defaults)
+async function classifyRoadDetails(lat: number, lng: number): Promise<{ authority: string; state: string | null }> {
+  let detectedState: string | null = null;
+  let authority = 'PWD';
+
+  try {
+    // SINGLE SUPER QUERY: OSM database se area boundary aur road tags dono ek sath nikalna
+    const query = `[out:json];
+      (
+        way(around:25,${lat},${lng})[highway];
+        is_in(${lat},${lng})->.a;
+        area.a[admin_level=4];
+      );
+      out tags;`;
+    
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+    const overpassRes = await fetch(url, { headers: { 'User-Agent': 'RoadWatchCivicAppV1' } });
+    const overpassData = await overpassRes.json();
+
+    if (overpassData.elements && overpassData.elements.length > 0) {
+      // 1. Extract State Name from administrative boundary levels
+      const stateElement = overpassData.elements.find((el: any) => el.type === 'area' || (el.tags && el.tags.admin_level === '4'));
+      const roadElement = overpassData.elements.find((el: any) => el.type === 'way' && el.tags && el.tags.highway);
+
+      if (stateElement && stateElement.tags && stateElement.tags.name) {
+        detectedState = stateElement.tags.name;
+        console.log(`🌍 Overpass Super-Query resolved State: ${detectedState}`);
+      } else {
+        // Fallback matching logic for nested geographic attributes
+        for (const el of overpassData.elements) {
+          if (el.tags && el.tags.boundary === 'administrative' && el.tags.admin_level === '4') {
+            detectedState = el.tags.name;
+            break;
+          }
+        }
+      }
+
+      // 2. Extract Road Governing Body Architecture
+      if (roadElement && roadElement.tags) {
+        const tags = roadElement.tags;
+        const ref = tags.ref ? tags.ref.toUpperCase() : '';
+        const highway = tags.highway || '';
+
+        if (ref.startsWith('NH') || highway === 'motorway' || highway === 'trunk') {
+          authority = 'NHAI';
+        } else if (ref.startsWith('SH') || ref.includes('MDR')) {
+          authority = 'STATE_HIGHWAY';
+        } else if (['residential', 'tertiary', 'service', 'living_street'].includes(highway)) {
+          authority = 'Municipal';
+        } else {
+          authority = 'PWD';
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error in Overpass infrastructure profiling:', err);
+  }
+
+  // 🎯 Clean and strict return: No fake defaults like "Delhi" or "Assam"
+  return { authority, state: detectedState };
+}
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -29,28 +91,11 @@ export async function POST(request: Request) {
     const lng = parseFloat(lngStr);
     const parsedImpact = parseInt(impactLevelStr, 10) || 2;
 
-    // 🎯 STRICT STATE DETECTION: Resolve directly from coordinates only
-    let detectedState: string | null = null;
+    
+    const { authority, state } = await classifyRoadDetails(lat, lng);
 
-    if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-      try {
-        const geocodeResponse = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
-          { headers: { 'User-Agent': 'RoadWatch-App' } }
-        );
-        const geocodeData = await geocodeResponse.json();
-        
-        if (geocodeData.address && geocodeData.address.state) {
-          detectedState = geocodeData.address.state;
-          console.log(`🌍 Geocoder successfully resolved State: ${detectedState}`);
-        }
-      } catch (geocodeErr) {
-        console.error("Failed to reverse geocode state name backend:", geocodeErr);
-      }
-    }
 
-    // Reject processing if the state could not be extracted via GPS
-    if (!detectedState) {
+    if (!state) {
       return NextResponse.json(
         { error: 'Could not accurately identify jurisdiction state from GPS coordinates.' },
         { status: 422 }
@@ -80,6 +125,7 @@ export async function POST(request: Request) {
 
     const imageUrl = publicUrlData.publicUrl;
 
+    
     const { data: reportData, error: dbError } = await supabase
       .from('reports')
       .insert([
@@ -91,7 +137,8 @@ export async function POST(request: Request) {
           lat,
           lng,
           image_url: imageUrl,
-          status: 'pending',
+          status: 'pending', 
+          governing_body: authority, 
           created_at: new Date().toISOString(),
         },
       ])
@@ -104,8 +151,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      message: "Report successfully queued for admin screening verification.",
-      report: reportData
+      message: "Report successfully processed.",
+      report: reportData,
+      roadAuthority: authority 
     });
 
   } catch (error: any) {
