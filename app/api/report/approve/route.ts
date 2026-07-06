@@ -53,8 +53,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Report entry not found in database' }, { status: 404 });
     }
 
+    // 1. Guardrail against duplicate processing (Aapka purana check)
     if (report.status === 'approved') {
       return NextResponse.json({ error: 'This report has already been approved and processed' }, { status: 400 });
+    }
+
+    // 🎯 2. MASTER GUARDRAIL FOR NHAI EMAIL SKIPPING (Naya Logic)
+    if (report.governing_body === 'NHAI') {
+      console.log(`🚫 NHAI Report #${report.id} detected. Updating status and bypassing email loop.`);
+      
+      // Database mein status ko 'approved' kar do taaki queue se hat jaye
+      const { error: updateError } = await supabase
+        .from('reports')
+        .update({ status: 'approved' })
+        .eq('id', report.id);
+
+      if (updateError) throw updateError;
+      
+      // Yahin se response return kar do, niche waala Nodemailer code execute hi nahi hoga!
+      return NextResponse.json({ 
+        success: true, 
+        message: 'NHAI report status updated to approved. State email dispatch bypassed cleanly.' 
+      });
     }
 
     // 🎯 STRICT STATE DETECTION: Resolve from coordinates via reverse geocoding first
