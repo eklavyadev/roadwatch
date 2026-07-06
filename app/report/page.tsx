@@ -62,19 +62,6 @@ const IMPACT_LABELS: Record<
   ],
 };
 
-const TYPE_LABEL: Record<string, string> = {
-  pothole: 'Pothole',
-  streetlight: 'Streetlight',
-  traffic_signal: 'Traffic Signal',
-  open_drainage: 'Open Drainage',
-};
-
-const IMPACT_LABEL: Record<number, string> = {
-  1: 'Low',
-  2: 'Medium',
-  3: 'High',
-};
-
 export default function ReportPotholePage() {
   const [image, setImage] = useState<File | null>(null);
 
@@ -166,17 +153,21 @@ export default function ReportPotholePage() {
         formData.append('lng', String(draft.lng));
         formData.append('type', draft.type);
         formData.append('impact_level', String(draft.impact_level));
-        if (draft.road_category) {
-          formData.append('road_category', draft.road_category);
-        }
 
         const res = await fetch('/api/report/create', {
           method: 'POST',
           body: formData,
         });
 
-        if (!res.ok) {
-          const data = await res.json();
+        const data = await res.json();
+
+        if (res.ok) {
+          // 🎯 OFFLINE SYNC REDIRECT INTERCEPTOR: Agar sync ke waqt koi NHAI road upload hui ho
+          if (data.roadAuthority === 'NHAI') {
+            alert("⚠️ Offline draft sync matched NHAI jurisdiction! Opening official grievance portal...");
+            window.open('https://pgportal.gov.in/', '_blank');
+          }
+        } else {
           console.error('Failed to sync draft:', data.error);
           failedCount++;
           remainingDrafts.push(draft);
@@ -218,7 +209,6 @@ export default function ReportPotholePage() {
         setLng(longitude);
         setAccuracy(Math.round(pos.coords.accuracy));
 
-        // Simplified location handling (Google Maps API disabled)
         setAutoLocation(`Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)}`);
       },
       () => {
@@ -243,9 +233,7 @@ export default function ReportPotholePage() {
     }
 
     if (!isAccuracyAcceptable) {
-      setError(
-        'Location accuracy is too low. Please retry from an open area.'
-      );
+      setError('Location accuracy is too low. Please retry from an open area.');
       return;
     }
 
@@ -261,25 +249,6 @@ export default function ReportPotholePage() {
       ? `(${landmark.trim()}) ${autoLocation}`
       : autoLocation;
 
-    let roadCategory = 'PWD';
-    if (navigator.onLine) {
-      try {
-        const classRes = await fetch('/api/classify-road', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lat, lng }),
-        });
-        if (classRes.ok) {
-          const classData = await classRes.json();
-          if (classData.category) {
-            roadCategory = classData.category;
-          }
-        }
-      } catch (err) {
-        console.warn('Failed to classify road:', err);
-      }
-    }
-
     // Check if offline, bypass server and cache locally
     if (!navigator.onLine) {
       try {
@@ -293,7 +262,6 @@ export default function ReportPotholePage() {
           lng,
           type: issueType,
           impact_level: impactLevel,
-          road_category: roadCategory,
         };
 
         const cached = localStorage.getItem('roadwatch_offline_reports');
@@ -313,7 +281,7 @@ export default function ReportPotholePage() {
         setImpactLevel(2);
         setIssueType('pothole');
         setSuccess(true);
-        setError('OFFLINE_SAVED'); // use error state to trigger custom offline warning
+        setError('OFFLINE_SAVED');
         return;
       } catch (err: any) {
         setLoading(false);
@@ -331,7 +299,6 @@ export default function ReportPotholePage() {
       formData.append('lng', String(lng));
       formData.append('type', issueType);
       formData.append('impact_level', String(impactLevel));
-      formData.append('road_category', roadCategory);
 
       const res = await fetch('/api/report/create', {
         method: 'POST',
@@ -344,6 +311,14 @@ export default function ReportPotholePage() {
       if (!res.ok) {
         setError(data.error || 'Something went wrong');
         return;
+      }
+
+      // 🎯 MASTER INTERCEPTOR TRIGGER FOR NHAI REAL TIME REDIRECTION
+      if (data.roadAuthority === 'NHAI') {
+        alert(
+          "⚠️ National Highway (NHAI) Jurisdiction Detected!\n\nThis road falls under the central government authority. RoadWatch will now automatically direct you to the official CPGRAMS portal in a new tab to file a direct complaint."
+        );
+        window.open('https://rajmargyatra.nhai.gov.in/complaints', '_blank');
       }
 
       // Reset
@@ -369,7 +344,6 @@ export default function ReportPotholePage() {
           lng,
           type: issueType,
           impact_level: impactLevel,
-          road_category: roadCategory,
         };
 
         const cached = localStorage.getItem('roadwatch_offline_reports');
@@ -413,7 +387,7 @@ export default function ReportPotholePage() {
 
         {success && error !== 'OFFLINE_SAVED' && (
           <div className="mb-4 rounded bg-green-600/20 border border-green-600 p-3 text-sm text-green-400">
-            ✅ Pothole reported successfully.
+            ✅ Issue reported successfully.
           </div>
         )}
 
@@ -456,7 +430,6 @@ export default function ReportPotholePage() {
           </div>
         )}
 
-
         {/* Image */}
         <label className="block mb-4">
           <span className="text-sm text-gray-300">
@@ -473,7 +446,6 @@ export default function ReportPotholePage() {
                 const compressed = await compressImage(file);
                 setImage(compressed);
               }}
-
             className="mt-2 block w-full text-sm"
           />
         </label>
@@ -533,46 +505,20 @@ export default function ReportPotholePage() {
 
             {!isAccuracyAcceptable && (
               <p className="text-red-400">
-                Location accuracy is too low. Try moving to an open area or reset
-                GPS via
-                <a
-                  href="https://maps.google.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline text-cyan-400 mx-1"
-                >
-                  maps.google.com
-                </a>
-                (required accuracy ≤ {MAX_GPS_ACCURACY}m).
+                Location accuracy is too low. Try moving to an open area or reset GPS.
               </p>
             )}
           </div>
         )}
 
-        {/* Severity */}
-        {/* <label className="block mb-6">
-          <span className="text-sm text-gray-300">Severity</span>
-          <select
-            value={severity}
-            onChange={(e) => setSeverity(Number(e.target.value))}
-            className="mt-2 w-full bg-[#020817] border border-slate-600 p-2 rounded"
-          >
-            <option value={1}>1 – Minor</option>
-            <option value={2}>2 – Low</option>
-            <option value={3}>3 – Medium</option>
-            <option value={4}>4 – High</option>
-            <option value={5}>5 – Critical</option>
-          </select>
-        </label> */}
-
-                {/* ISSUE TYPE */}
+        {/* ISSUE TYPE */}
         <label className="block mb-4">
           <span className="text-sm text-gray-300">Issue Type</span>
           <select
             value={issueType}
             onChange={(e) => {
               setIssueType(e.target.value);
-              setImpactLevel(3); // reset on change
+              setImpactLevel(2); // reset to standard level on change
             }}
             className="mt-2 w-full bg-[#020817] border border-slate-600 p-2 rounded"
           >
