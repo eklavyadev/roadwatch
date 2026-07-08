@@ -11,6 +11,7 @@ const navigation = [
   { name: 'API Docs', href: '/api' },
   { name: 'Tech Stack', href: '/tech' },
   { name: 'Ledger', href: '/ledger' },
+  { name: 'Tender Data', href: '/tender-data' },
   { name: 'Complaint', href: '/complaint' },
 ];
 
