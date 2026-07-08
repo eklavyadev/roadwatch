@@ -282,6 +282,34 @@ export default function ApiDocsPage() {
           </div>
 
           <div className="border-t border-slate-800 pt-8 mt-8">
+            <h2 className="text-2xl font-bold text-cyan-400 mb-8">4. Embeddable Reporting Widget</h2>
+            
+            <div className="space-y-8">
+              <section className="bg-[#0f172a] border border-slate-700 rounded p-6">
+                <h3 className="text-xl font-semibold mb-4">Iframe Integration</h3>
+
+                <p className="mb-4 text-gray-400 text-sm">
+                  You can allow users to report potholes directly from your own website using our fully functional embeddable widget. It handles image compression, AI classification, GPS location, and offline caching automatically.
+                </p>
+
+                <div className="bg-black rounded p-4 text-sm font-mono text-cyan-400 overflow-x-auto">
+                  {`<iframe 
+  src="https://roadwatch.com/embed/report" 
+  width="100%" 
+  height="700px" 
+  style="border: none; border-radius: 8px;"
+  allow="geolocation; camera">
+</iframe>`}
+                </div>
+
+                <p className="mt-4 text-gray-400 text-sm">
+                  <strong className="text-white">Note:</strong> You must include the <code className="text-white">allow="geolocation; camera"</code> attribute so the widget can correctly prompt users for their GPS location and camera access.
+                </p>
+              </section>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-800 pt-8 mt-8">
             {/* Usage */}
             <section className="bg-[#0f172a] border border-slate-700 rounded p-6">
               <h2 className="text-xl font-semibold mb-3">Recommended Usage</h2>
