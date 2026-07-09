@@ -36,7 +36,7 @@ export default function TenderDataPage() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   
   // Active Filter States
-  const [selectedCategory, setSelectedCategory] = useState<"NH" | "StateProjects">("NH");
+  const [selectedCategory, setSelectedCategory] = useState<"all" | "NH" | "StateProjects">("all");
   const [selectedType, setSelectedType] = useState<"SH" | "PWD" | "Municipality" | "StateProjects">("StateProjects");
   const [selectedYear, setSelectedYear] = useState<string>("all");
   const [selectedState, setSelectedState] = useState<string>("all");
@@ -70,7 +70,9 @@ export default function TenderDataPage() {
     try {
       const url = new URL('/api/transparency/tenders', window.location.origin);
       
-      if (selectedCategory === "NH") {
+      if (selectedCategory === "all") {
+        url.searchParams.set("category", "all");
+      } else if (selectedCategory === "NH") {
         url.searchParams.set("category", "NH");
       } else {
         url.searchParams.set("category", selectedType);
@@ -103,7 +105,7 @@ export default function TenderDataPage() {
 
   // Reset states when switching tabs or categories
   useEffect(() => {
-    if (selectedCategory === "NH") {
+    if (selectedCategory === "NH" || selectedCategory === "all") {
       setSelectedState("all");
     } else {
       // If switching to State projects and year is before 2024, adjust to all/2026
@@ -150,6 +152,14 @@ export default function TenderDataPage() {
               <div className={`flex bg-[#020817] border border-slate-800 p-1.5 rounded-lg transition-all duration-300 ${
                 selectedCategory === "StateProjects" ? 'md:col-span-4' : 'md:col-span-8'
               }`}>
+                <button
+                  onClick={() => setSelectedCategory("all")}
+                  className={`flex-1 text-center py-2.5 text-xs font-bold uppercase tracking-wider rounded-md transition duration-200 ${
+                    selectedCategory === "all" ? 'bg-cyan-500 text-[#020817]' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  All
+                </button>
                 <button
                   onClick={() => setSelectedCategory("NH")}
                   className={`flex-1 text-center py-2.5 text-xs font-bold uppercase tracking-wider rounded-md transition duration-200 ${
@@ -222,7 +232,7 @@ export default function TenderDataPage() {
                   <option value="2025">Year 2025</option>
                   <option value="2024">Year 2024</option>
                   {/* NH category shows 2021-2023 in addition */}
-                  {selectedCategory === "NH" && (
+                  {(selectedCategory === "NH" || selectedCategory === "all") && (
                     <>
                       <option value="2023">Year 2023</option>
                       <option value="2022">Year 2022</option>
@@ -294,7 +304,7 @@ export default function TenderDataPage() {
                 <p className="text-slate-400 text-xs mt-0.5">Audited state contract schedules matching active filters</p>
               </div>
               <span className="text-[10px] bg-[#0f172a] text-cyan-400 border border-slate-800 px-3 py-1 rounded-full font-mono uppercase tracking-wider font-semibold">
-                {selectedCategory === "NH" ? "NHAI Ledger" : `${selectedType} Ledger`}
+                {selectedCategory === "all" ? "All Projects Ledger" : selectedCategory === "NH" ? "NHAI Ledger" : `${selectedType} Ledger`}
               </span>
             </div>
 
