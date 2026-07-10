@@ -310,6 +310,53 @@ export default function ApiDocsPage() {
           </div>
 
           <div className="border-t border-slate-800 pt-8 mt-8">
+            <h2 className="text-2xl font-bold text-cyan-400 mb-8">5. Tender Data API</h2>
+            
+            <div className="space-y-8">
+              {/* Endpoint */}
+              <section className="bg-[#0f172a] border border-slate-700 rounded p-6">
+                <h3 className="text-xl font-semibold mb-4">Endpoint</h3>
+
+                <div className="bg-black rounded p-4 text-sm font-mono text-cyan-400">
+                  GET /api/tender-data
+                </div>
+
+                <p className="mt-3 text-gray-400 text-sm">
+                  Returns public highway and civic tender contracts. Supports filtering by category (NH/SH/PWD/Municipality/StateProjects/all), year, state, and search query.
+                </p>
+              </section>
+
+              {/* Example Request */}
+              <section className="bg-[#0f172a] border border-slate-700 rounded p-6">
+                <h3 className="text-xl font-semibold mb-4">Example Request</h3>
+
+                <pre className="bg-black rounded p-4 text-sm overflow-x-auto text-gray-200">
+{`fetch('/api/tender-data?category=StateProjects&state=Maharashtra&year=2024')
+  .then(res => res.json())
+  .then(data => {
+    console.log(data.contracts);
+    console.log(data.aggregates);
+  });`}
+                </pre>
+              </section>
+
+              {/* Fields */}
+              <section className="bg-[#0f172a] border border-slate-700 rounded p-6">
+                <h3 className="text-xl font-semibold mb-4">Response Fields</h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-300">
+                  <p><span className="text-white font-medium">contracts</span> – Array of tender records</p>
+                  <p><span className="text-white font-medium">aggregates</span> – Summary stats (totalSpend, totalContracts, activeBidders)</p>
+                  <p><span className="text-white font-medium">tenderRefNo</span> – Official Tender Reference</p>
+                  <p><span className="text-white font-medium">organisationName</span> – Department Name</p>
+                  <p><span className="text-white font-medium">contractValue</span> – Value in INR</p>
+                  <p><span className="text-white font-medium">category</span> – NH, SH, PWD, or Municipality</p>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-800 pt-8 mt-8">
             {/* Usage */}
             <section className="bg-[#0f172a] border border-slate-700 rounded p-6">
               <h2 className="text-xl font-semibold mb-3">Recommended Usage</h2>
