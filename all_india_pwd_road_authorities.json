@@ -203,24 +203,24 @@
         "state_ut": "Uttar Pradesh",
         "authority_type": "State Government",
         "department_name": "Public Works Department",
-        "office_email": "ministeruppwd@gmail.com",      
+        "office_email": "uppwd.hq1@gmail.com",      
         "administrative_head_email": "secpwd-up@nic.in",
-        "official_website": "https://upsha.in/"    
+        "official_website": "https://uppwd.gov.in/"    
     },
     {
-        "state_ut": "Uttarakhand",
+        "state_ut": "Uttarakhand",               
         "authority_type": "State Government",
         "department_name": "Public Works Department",
         "office_email": "eicpwduk@nic.in",
-        "administrative_head_email": "cehq.pwduk@gov.in",
+        "administrative_head_email": "cehqpwduk@gov.in",
         "official_website": "https://pwd.uk.gov.in"
     },
     {
         "state_ut": "West Bengal",
         "authority_type": "State Government",
         "department_name": "Public Works Department",
-        "office_email": "cehq.pwd-wb@gov.in",
-        "administrative_head_email": "micpwdwb@gmail.com",
+        "office_email": "secpwd@wb.gov.in",
+        "administrative_head_email": "cepwd11@yahoo.com",
         "official_website": "https://pwd.wb.gov.in/"   
     },
     {
@@ -228,7 +228,7 @@
         "authority_type": "Union Territory",
         "department_name": "Public Works Department",
         "office_email": "pwdhqdelhi@gmail.com",
-        "administrative_head_email": "ss-pwd@delhi.gov.in",
+        "administrative_head_email": "einc-pwd@delhi.gov.in",
         "official_website": "https://www.pwddelhi.gov.in"
     },
     {
