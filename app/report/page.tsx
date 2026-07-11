@@ -75,8 +75,7 @@ export default function ReportPotholePage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  type IssueType = 'pothole' | 'open_drainage' | 'others';
-  const [issueType, setIssueType] = useState<IssueType>('pothole');
+  const [issueType, setIssueType] = useState('pothole');
   const [impactLevel, setImpactLevel] = useState(2);
   const [consentGiven, setConsentGiven] = useState(false);
 
