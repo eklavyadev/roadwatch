@@ -75,7 +75,8 @@ export default function ReportPotholePage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [issueType, setIssueType] = useState('pothole');
+  type IssueType = 'pothole' | 'open_drainage' | 'others';
+  const [issueType, setIssueType] = useState<IssueType>('pothole');
   const [impactLevel, setImpactLevel] = useState(2);
   const [consentGiven, setConsentGiven] = useState(false);
 
@@ -336,6 +337,7 @@ export default function ReportPotholePage() {
       setImpactLevel(2);
       setIssueType('pothole');
       setSuccess(true);
+      setConsentGiven(false);
     } catch (err) {
       console.warn('Online fetch failed. Attemping local offline fallback...', err);
       try {
@@ -368,6 +370,7 @@ export default function ReportPotholePage() {
         setIssueType('pothole');
         setSuccess(true);
         setError('OFFLINE_SAVED');
+        setConsentGiven(false);
       } catch (offlineErr: any) {
         setLoading(false);
         setError('Network failed, and local saving failed: ' + offlineErr.message);
@@ -564,7 +567,7 @@ export default function ReportPotholePage() {
               and accurate.
               <br />
               <br />
-              I voluntarily consent to sharing my current GPS location for the purpose
+              I voluntarily consent to sharing my current precise GPS location for the purpose
               of identifying, verifying, processing, and maintaining the reported road
               issue by the relevant government department or authorized road
               maintenance authority. My location information will be used only for
