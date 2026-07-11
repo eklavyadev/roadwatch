@@ -43,22 +43,19 @@ const IMPACT_LABELS: Record<
   pothole: [
     { value: 1, label: 'Minor surface damage' },
     { value: 2, label: 'Moderate dip / uneven road' },
-    { value: 3, label: 'Severe / accident‑prone pothole' },
+    { value: 3, label: 'Severe / accident-prone pothole' },
   ],
-  streetlight: [
-    { value: 1, label: 'Flickering occasionally' },
-    { value: 2, label: 'Often off / unstable' },
-    { value: 3, label: 'Completely not working' },
-  ],
-  traffic_signal: [
-    { value: 1, label: 'Delayed / slow response' },
-    { value: 2, label: 'Stuck on one color' },
-    { value: 3, label: 'Not functioning at all' },
-  ],
+
   open_drainage: [
-    { value: 1, label: 'Partially open' },
-    { value: 2, label: 'Fully open' },
-    { value: 3, label: 'Deep / hazardous' },
+    { value: 1, label: 'Partially open drainage' },
+    { value: 2, label: 'Fully open drainage' },
+    { value: 3, label: 'Deep / hazardous drainage' },
+  ],
+
+  others: [
+    { value: 1, label: 'Minor issue with limited impact' },
+    { value: 2, label: 'Moderate issue affecting road users' },
+    { value: 3, label: 'Severe / hazardous issue requiring urgent attention' },
   ],
 };
 
@@ -80,6 +77,7 @@ export default function ReportPotholePage() {
   const [error, setError] = useState('');
   const [issueType, setIssueType] = useState('pothole');
   const [impactLevel, setImpactLevel] = useState(2);
+  const [consentGiven, setConsentGiven] = useState(false);
 
   // Offline support states
   const [isOnline, setIsOnline] = useState(true);
@@ -220,6 +218,12 @@ export default function ReportPotholePage() {
 
   /* ---------- SUBMIT ---------- */
   const submitReport = async () => {
+    if (!consentGiven) {
+      setError(
+        'Please confirm the declaration and consent before submitting the report.'
+      );
+      return;
+    }
     setError('');
 
     if (!image) {
@@ -282,6 +286,7 @@ export default function ReportPotholePage() {
         setIssueType('pothole');
         setSuccess(true);
         setError('OFFLINE_SAVED');
+        setConsentGiven(false);
         return;
       } catch (err: any) {
         setLoading(false);
@@ -522,10 +527,9 @@ export default function ReportPotholePage() {
             }}
             className="mt-2 w-full bg-[#020817] border border-slate-600 p-2 rounded"
           >
-            <option value="pothole">Pothole</option>
-            <option value="streetlight">Streetlight</option>
-            <option value="traffic_signal">Traffic Signal</option>
-            <option value="open_drainage">Open Drainage</option>
+              <option value="pothole">Pothole</option>
+              <option value="open_drainage">Open Drainage</option>
+              <option value="others">Other Road Issue</option>
           </select>
         </label>
 
@@ -544,10 +548,39 @@ export default function ReportPotholePage() {
             ))}
           </select>
         </label>
+          {/* Consent */}
+        <div className="mb-6 rounded-lg border border-slate-700 bg-slate-900/50 p-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={consentGiven}
+              onChange={(e) => setConsentGiven(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-cyan-500"
+            />
 
+            <span className="text-sm text-slate-300 leading-6">
+              <strong>I declare</strong> that, to the best of my knowledge, the
+              information, photographs, and details provided in this report are true
+              and accurate.
+              <br />
+              <br />
+              I voluntarily consent to sharing my current GPS location for the purpose
+              of identifying, verifying, processing, and maintaining the reported road
+              issue by the relevant government department or authorized road
+              maintenance authority. My location information will be used only for
+              official complaint handling, infrastructure maintenance, and related
+              public service activities.
+            </span>
+          </label>
+        </div>
         <button
           onClick={submitReport}
-          disabled={loading || !locationResolved || !isAccuracyAcceptable}
+          disabled={
+              loading ||
+              !locationResolved ||
+              !isAccuracyAcceptable ||
+              !consentGiven
+            }
           className="w-full bg-white text-black py-3 rounded font-semibold disabled:opacity-60"
         >
           {loading ? 'Submitting…' : 'Submit Report'}
