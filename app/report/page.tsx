@@ -590,7 +590,7 @@ export default function ReportPotholePage() {
         </button>
 
         <p className="text-xs text-gray-400 mt-4 text-center">
-          Reports are published after automated verification.
+          Reports are published after human verification. Refer to dashboard for status updates.
           <br />
           Accurate GPS improves data quality for everyone.
         </p>
